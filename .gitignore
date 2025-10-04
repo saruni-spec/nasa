@@ -1,0 +1,74 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+nasa/
+/nasa/
+nasa*
+nasa/*
+.env/
+.venv/
+ENV/
+env/
+pip-wheel-metadata/
+*.egg-info/
+.eggs/
+
+# PyInstaller
+*.spec
+dist/
+build/
+
+# Flask cache and debug
+instance/
+*.log
+*.pot
+*.mo
+
+# dotenv environment variables
+.env
+.env.*
+
+# Pytest
+.cache/
+.pytest_cache/
+
+# mypy / coverage / profiling
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+.prof
+
+# VSCode
+.vscode/
+
+# macOS
+.DS_Store
+
+# Python packaging
+*.egg
+MANIFEST
+
+# Backup files
+*.bak
+*.swp
+*.swo
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Database
+*.sqlite3
+*.db
+
+# Gunicorn / Uvicorn / other server logs
+gunicorn.log
+
+scraped_html_files
+scraped_html_files/
+scraped_html_files*
+scraped_html_files/*
