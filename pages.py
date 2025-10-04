@@ -7,12 +7,10 @@ from urllib.parse import urlparse
 csv_file = "SB_publication_PMC.csv"
 # Define the directory where the HTML files will be saved
 output_directory = "scraped_html_files"
-# Define the column containing the links (adjust if your column is named differently)
+# Define the column containing the links
 link_column_name = "Link"
 
-# --- IMPORTANT: Add Headers to Mimic a Browser ---
-# This is a common User-Agent string for a Chrome browser.
-# Including this helps bypass the 403 Forbidden error.
+#  Headers to Mimic a Browser ---
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 }
@@ -25,11 +23,8 @@ if not os.path.exists(output_directory):
 # --- 2. Read the CSV File ---
 try:
     # Use the file content fetcher to get the content of the CSV
-    # (In a real local environment, you would use pd.read_csv(csv_file))
-    # Since we are in a code interpreter, let's assume the file content is available
-    # for simplicity, but if you ran this locally, it would be a simple file read.
 
-    # Let's trust that you are running this locally and the file is present.
+    # the file is present.
     df = pd.read_csv(csv_file)
 except FileNotFoundError:
     print(f"Error: The file '{csv_file}' was not found.")

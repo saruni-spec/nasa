@@ -9,7 +9,7 @@ def extract_article_data(file_path: str) -> dict:
     data = {}
 
     # --- Title ---
-    # Often inside <meta name="citation_title"> or <title>
+    # <meta name="citation_title"> or <title>
     meta_title = soup.find("meta", {"name": "citation_title"})
     if meta_title:
         data["title"] = meta_title.get("content", "").strip()
@@ -18,7 +18,7 @@ def extract_article_data(file_path: str) -> dict:
             data["title"] = soup.title.get_text(strip=True)
 
     # --- Authors ---
-    # Usually multiple <meta name="citation_author">
+    # <meta name="citation_author">
     authors = [
         m.get("content", "").strip()
         for m in soup.find_all("meta", {"name": "citation_author"})
@@ -46,7 +46,7 @@ def extract_article_data(file_path: str) -> dict:
 
 
 if __name__ == "__main__":
-    file_path = "scraped_html_files/PMC6371294.html"  # test on one
+    file_path = "scraped_html_files/PMC6371294.html"
     if os.path.exists(file_path):
         article = extract_article_data(file_path)
         print(article)
