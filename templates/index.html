@@ -608,12 +608,12 @@
                     <span>Knowledge Graph</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <!-- <li class="nav-item">
                 <a href="#" class="nav-link" data-tab="analytics">
                     <i class="fas fa-chart-bar nav-icon"></i>
                     <span>Analytics</span>
                 </a>
-            </li>
+            </li> -->
             <li class="nav-item">
                 <a href="#" class="nav-link" data-tab="saved-articles">
                     <i class="fas fa-bookmark nav-icon"></i>
@@ -681,9 +681,7 @@
                     </div>
                 </div>
 
-                
-
-                <!-- Add this after the AI-Generated Insights card in dashboard-tab -->
+            
 <div class="card">
     <div class="card-header">
         <div class="card-title">
@@ -694,9 +692,12 @@
     </div>
     <div class="card-content">
         <div class="grid-2-col">
-            <div class="chart-container">
-                <canvas id="dashboard-top-cited-chart"></canvas>
-            </div>
+          
+                            <div class="chart-container">
+                                <canvas id="trends-chart"></canvas>
+                            </div>
+                           
+                     
             <div class="chart-container">
                 <canvas id="dashboard-top-funders-chart"></canvas>
             </div>
@@ -816,14 +817,7 @@
                         <div class="card-description">Advanced metrics and trends analysis</div>
                     </div>
                     <div class="card-content">
-                        <div class="grid-2-col">
-                            <div class="chart-container">
-                                <canvas id="trends-chart"></canvas>
-                            </div>
-                            <div class="chart-container">
-                                <canvas id="impact-chart"></canvas>
-                            </div>
-                        </div>
+                        
                         
                         <div class="grid-2-col">
                             <div class="chart-container">
@@ -1036,10 +1030,10 @@
         async function loadTabData(tabId) {
             switch(tabId) {
                 case 'dashboard':
-                    // Already loaded from server
+                    await initializeAnalytics();
                     break;
                 case 'analytics':
-                    await initializeAnalytics();
+                    
                     break;
                 case 'explore':
                     initializeSearch();
@@ -1364,14 +1358,14 @@
                             tension: 0.3,
                             fill: true
                         },
-                        {
-                            label: 'Avg Citations',
-                            data: data.trends.citations,
-                            borderColor: '#38a169',
-                            backgroundColor: 'rgba(56, 161, 105, 0.1)',
-                            tension: 0.3,
-                            fill: true
-                        }
+                        // {
+                        //     label: 'Avg Citations',
+                        //     data: data.trends.citations,
+                        //     borderColor: '#38a169',
+                        //     backgroundColor: 'rgba(56, 161, 105, 0.1)',
+                        //     tension: 0.3,
+                        //     fill: true
+                        // }
                     ]
                 },
                 options: {
@@ -1385,75 +1379,75 @@
             });
 
             // Impact Chart
-            const impactCtx = document.getElementById('impact-chart').getContext('2d');
-            new Chart(impactCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: data.impact.labels,
-                    datasets: [{
-                        data: data.impact.data,
-                        backgroundColor: ['#e53e3e', '#d69e2e', '#38a169', '#a0aec0'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'right' },
-                        title: { display: true, text: 'Impact Distribution' }
-                    }
-                }
-            });
+            // const impactCtx = document.getElementById('impact-chart').getContext('2d');
+            // new Chart(impactCtx, {
+            //     type: 'doughnut',
+            //     data: {
+            //         labels: data.impact.labels,
+            //         datasets: [{
+            //             data: data.impact.data,
+            //             backgroundColor: ['#e53e3e', '#d69e2e', '#38a169', '#a0aec0'],
+            //             borderWidth: 0
+            //         }]
+            //     },
+            //     options: {
+            //         responsive: true,
+            //         maintainAspectRatio: false,
+            //         plugins: {
+            //             legend: { position: 'right' },
+            //             title: { display: true, text: 'Impact Distribution' }
+            //         }
+            //     }
+            // });
 
-            // Research Area Chart
-            const researchAreaCtx = document.getElementById('research-area-chart').getContext('2d');
-            new Chart(researchAreaCtx, {
-                type: 'bar',
-                data: {
-                    labels: data.researchAreas.labels,
-                    datasets: [{
-                        label: 'Impact Score',
-                        data: data.researchAreas.data,
-                        backgroundColor: '#3182ce',
-                        borderRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        title: { display: true, text: 'Research Area Impact' }
-                    }
-                }
-            });
+            // // Research Area Chart
+            // const researchAreaCtx = document.getElementById('research-area-chart').getContext('2d');
+            // new Chart(researchAreaCtx, {
+            //     type: 'bar',
+            //     data: {
+            //         labels: data.researchAreas.labels,
+            //         datasets: [{
+            //             label: 'Impact Score',
+            //             data: data.researchAreas.data,
+            //             backgroundColor: '#3182ce',
+            //             borderRadius: 5
+            //         }]
+            //     },
+            //     options: {
+            //         responsive: true,
+            //         maintainAspectRatio: false,
+            //         plugins: {
+            //             legend: { display: false },
+            //             title: { display: true, text: 'Research Area Impact' }
+            //         }
+            //     }
+            // });
 
-            // Methodology Chart
-            const methodologyCtx = document.getElementById('methodology-chart').getContext('2d');
-            new Chart(methodologyCtx, {
-                type: 'bar',
-                data: {
-                    labels: data.methodology.labels,
-                    datasets: [{
-                        label: 'Publications',
-                        data: data.methodology.data,
-                        backgroundColor: '#38a169',
-                        borderRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        title: { display: true, text: 'Methodology Distribution' }
-                    },
-                    scales: {
-                        x: { ticks: { maxRotation: 45 } }
-                    }
-                }
-            });
+            // // Methodology Chart
+            // const methodologyCtx = document.getElementById('methodology-chart').getContext('2d');
+            // new Chart(methodologyCtx, {
+            //     type: 'bar',
+            //     data: {
+            //         labels: data.methodology.labels,
+            //         datasets: [{
+            //             label: 'Publications',
+            //             data: data.methodology.data,
+            //             backgroundColor: '#38a169',
+            //             borderRadius: 5
+            //         }]
+            //     },
+            //     options: {
+            //         responsive: true,
+            //         maintainAspectRatio: false,
+            //         plugins: {
+            //             legend: { display: false },
+            //             title: { display: true, text: 'Methodology Distribution' }
+            //         },
+            //         scales: {
+            //             x: { ticks: { maxRotation: 45 } }
+            //         }
+            //     }
+            // });
         }
 
         function initializeSearch() {
@@ -1612,36 +1606,36 @@
         // Add this new function after renderAnalyticsCharts
 function renderDashboardCharts(data) {
     // Top Cited Articles Chart
-    if (data.topCited) {
-        const topCitedCtx = document.getElementById('dashboard-top-cited-chart').getContext('2d');
-        new Chart(topCitedCtx, {
-            type: 'bar',
-            data: {
-                labels: data.topCited.labels,
-                datasets: [{
-                    label: 'Citations',
-                    data: data.topCited.data,
-                    backgroundColor: '#d69e2e',
-                    borderRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                indexAxis: 'y',
-                plugins: {
-                    legend: { display: false },
-                    title: { display: true, text: 'Top 10 Most Cited Articles' }
-                },
-                scales: {
-                    x: { 
-                        beginAtZero: true,
-                        title: { display: true, text: 'Citations' }
-                    }
-                }
-            }
-        });
-    }
+    // if (data.topCited) {
+    //     const topCitedCtx = document.getElementById('dashboard-top-cited-chart').getContext('2d');
+    //     new Chart(topCitedCtx, {
+    //         type: 'bar',
+    //         data: {
+    //             labels: data.topCited.labels,
+    //             datasets: [{
+    //                 label: 'Citations',
+    //                 data: data.topCited.data,
+    //                 backgroundColor: '#d69e2e',
+    //                 borderRadius: 5
+    //             }]
+    //         },
+    //         options: {
+    //             responsive: true,
+    //             maintainAspectRatio: false,
+    //             indexAxis: 'y',
+    //             plugins: {
+    //                 legend: { display: false },
+    //                 title: { display: true, text: 'Top 10 Most Cited Articles' }
+    //             },
+    //             scales: {
+    //                 x: { 
+    //                     beginAtZero: true,
+    //                     title: { display: true, text: 'Citations' }
+    //                 }
+    //             }
+    //         }
+    //     });
+    // }
     
     // Top Funders Chart
     if (data.topFunders) {
