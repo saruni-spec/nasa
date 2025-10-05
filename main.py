@@ -119,9 +119,12 @@ class SearchResult(BaseModel):
 # ============================================
 # Main Dashboard Route - SERVER RENDERED
 # ============================================
-
-
 @app.get("/")
+def home(request: Request):
+    return templates.TemplateResponse("home.html", {"request": request})
+
+
+@app.get("/dashboard")
 async def root(request: Request):
     """
     Server-rendered landing page with all dashboard data pre-loaded
