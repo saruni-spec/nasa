@@ -780,7 +780,25 @@ class DatabaseLoader:
 
 
 def load_all_articles(json_file: str, db_config: dict, batch_size: int = 50):
-    """Load all articles from enhanced JSON"""
+    """Load all articles, skipping those already in the database."""
+
+    # --- NEW: Get already processed PMCID's ---
+    print("Connecting to the database to check for existing articles...")
+    try:
+        conn = psycopg2.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute("SELECT pmcid FROM articles")
+        # Fetch all pmcids and store them in a set for fast lookups
+        processed_pmcids = {row[0] for row in cursor.fetchall()}
+        cursor.close()
+        conn.close()
+        print(
+            f"Found {len(processed_pmcids)} articles already in the database. They will be skipped."
+        )
+    except Exception as e:
+        print(f"Error checking for existing articles: {e}")
+        processed_pmcids = set()  # Start from scratch if check fails
+    # --- END NEW ---
 
     print("Loading articles from JSON...")
     with open(json_file, "r", encoding="utf-8") as f:
@@ -789,28 +807,41 @@ def load_all_articles(json_file: str, db_config: dict, batch_size: int = 50):
     print(f"Found {len(articles)} articles to process\n")
 
     processed = 0
+    skipped = 0  # Keep track of skipped articles
     errors = []
 
-    # The 'with' statement is now INSIDE the loop
     for i, article in enumerate(articles, 1):
         pmcid = article.get("pmcid", "unknown")
+
+        # --- NEW: Skip if already processed ---
+        if pmcid in processed_pmcids:
+            skipped += 1
+            if i % (batch_size * 10) == 0:  # Print status less often for skips
+                print(f"-> Skipped {skipped} articles so far...")
+            continue
+        # --- END NEW ---
+
         try:
-            # A new connection is created for each article
             with DatabaseLoader(db_config) as loader:
                 loader.process_article(article)
 
             processed += 1
             if i % batch_size == 0:
-                print(f"✓ Processed {i}/{len(articles)} articles...")
+                print(
+                    f"✓ Processed {i}/{len(articles)} articles... (Total new: {processed})"
+                )
 
         except Exception as e:
             errors.append((pmcid, str(e)))
             print(f"✗ {pmcid}: {e}")
 
+    # (The rest of the function remains the same)
     print("\n" + "=" * 60)
     print("PROCESSING COMPLETE")
     print("=" * 60)
-    print(f"Successfully processed: {processed}/{len(articles)}")
+    print(f"Successfully processed (newly inserted/updated): {processed}")
+    print(f"Skipped (already existed): {skipped}")
+    print(f"Total articles in JSON: {len(articles)}")
     print(f"Errors: {len(errors)}")
 
     if errors:
