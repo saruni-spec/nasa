@@ -6,6 +6,9 @@
     <title>NASA Space Hub</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- model-viewer library -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.1.1/model-viewer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -41,7 +44,6 @@
             min-height: 100vh;
         }
 
-        /* Sidebar Navigation */
         .sidebar {
             width: 260px;
             background: var(--sidebar-bg);
@@ -101,7 +103,6 @@
             text-align: center;
         }
 
-        /* Main Content */
         .main-content {
             flex: 1;
             display: flex;
@@ -149,7 +150,6 @@
             overflow-y: auto;
         }
 
-        /* Tab Content */
         .tab-content {
             display: none;
         }
@@ -164,7 +164,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Card Styles */
         .card {
             background: var(--card-bg);
             border-radius: 10px;
@@ -202,7 +201,6 @@
             margin-top: 15px;
         }
 
-        /* Dashboard Grid */
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -217,7 +215,6 @@
             margin-bottom: 20px;
         }
 
-        /* Metric Cards */
         .metric-card {
             display: flex;
             flex-direction: column;
@@ -260,7 +257,6 @@
             color: var(--text-muted);
         }
 
-        /* Progress Bars */
         .progress-container {
             margin: 15px 0;
         }
@@ -295,7 +291,6 @@
             transition: width 0.5s ease;
         }
 
-        /* Badges */
         .badge {
             display: inline-block;
             padding: 4px 10px;
@@ -319,7 +314,6 @@
             color: white;
         }
 
-        /* Insights Grid */
         .insights-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -353,14 +347,12 @@
             line-height: 1.5;
         }
 
-        /* Chart Containers */
         .chart-container {
             position: relative;
             height: 300px;
             width: 100%;
         }
 
-        /* Search & Filters */
         .search-container {
             position: relative;
             width: 100%;
@@ -392,30 +384,6 @@
             box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
         }
 
-        /* Knowledge Graph Visualization */
-        .graph-container {
-            height: 500px;
-            background: #f8fafc;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-
-        .graph-placeholder {
-            text-align: center;
-            color: var(--text-muted);
-        }
-
-        .graph-placeholder i {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: var(--accent);
-        }
-
-        /* API Status */
         .api-status {
             display: flex;
             align-items: center;
@@ -439,7 +407,131 @@
             color: var(--text-light);
         }
 
-        /* Responsive Design */
+        /* Chatbot Styles */
+        .chatbot-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            cursor: pointer;
+        }
+
+        model-viewer {
+            width: 80px;
+            height: 80px;
+            background-color: transparent;
+            animation: bounce 2.5s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .chat-window {
+            position: fixed;
+            bottom: 110px;
+            right: 20px;
+            width: 320px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 2000;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border);
+        }
+
+        .chat-window.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .chat-header {
+            background: var(--primary);
+            color: white;
+            padding: 12px 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-header-buttons span {
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 14px;
+            scrollbar-width: thin;
+            background: var(--background);
+        }
+
+        .chat-input {
+            display: flex;
+            border-top: 1px solid var(--border);
+            background: white;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            outline: none;
+            font-size: 0.9rem;
+        }
+
+        .chat-input button {
+            padding: 10px 15px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .chat-input button:hover {
+            background: var(--accent-light);
+        }
+
+        .message {
+            margin: 8px 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            max-width: 85%;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            background: var(--accent);
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.bot {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
         @media (max-width: 1024px) {
             .sidebar {
                 width: 70px;
@@ -482,6 +574,12 @@
             .dashboard-grid, .grid-2-col {
                 grid-template-columns: 1fr;
             }
+
+            .chat-window {
+                width: calc(100% - 40px);
+                right: 20px;
+                left: 20px;
+            }
         }
     </style>
 </head>
@@ -516,6 +614,12 @@
                     <span>Analytics</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-tab="saved-articles">
+                    <i class="fas fa-bookmark nav-icon"></i>
+                    <span>Saved Articles</span>
+                </a>
+            </li>
         </ul>
     </div>
 
@@ -533,46 +637,76 @@
             <!-- API Status Indicator -->
             <div class="api-status">
                 <div class="status-indicator"></div>
-                <div class="status-text" id="api-status">Connected to NASA Bioscience API</div>
+                <div class="status-text">Data loaded from NASA Bioscience API</div>
             </div>
 
             <!-- Dashboard Tab -->
             <div class="tab-content active" id="dashboard-tab">
                 <!-- Key Metrics -->
-                <div class="dashboard-grid" id="metrics-grid">
-                    <!-- Metrics will be populated by JavaScript -->
-                </div>
-
-                <!-- Research Areas & Knowledge Gaps -->
-                <div class="grid-2-col">
-                    <!-- Top Research Areas Card -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-chart-line"></i>
-                                Top Research Areas
-                            </div>
-                            <div class="card-description">Most active areas of investigation</div>
+                <div class="dashboard-grid">
+                    <div class="card metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Total Publications</div>
+                            <div class="metric-icon"><i class="fas fa-book-open"></i></div>
                         </div>
-                        <div class="card-content" id="research-areas">
-                            <!-- Research areas will be populated by JavaScript -->
-                        </div>
+                        <div class="metric-value">{{ metrics.total_publications }}</div>
+                        <div class="metric-description">+{{ metrics.recent_publications }} in last 2 years</div>
                     </div>
 
-                    <!-- Critical Knowledge Gaps Card -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i>
-                                Critical Knowledge Gaps
-                            </div>
-                            <div class="card-description">Areas requiring urgent research attention</div>
+                    <div class="card metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">NASA Related</div>
+                            <div class="metric-icon"><i class="fas fa-bullseye"></i></div>
                         </div>
-                        <div class="card-content" id="knowledge-gaps">
-                            <!-- Knowledge gaps will be populated by JavaScript -->
+                        <div class="metric-value">{{ metrics.nasa_related_count }}</div>
+                        <div class="metric-description">{{ "%.1f"|format(metrics.nasa_related_percent) }}% of total publications</div>
+                    </div>
+
+                    <div class="card metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Total Authors</div>
+                            <div class="metric-icon"><i class="fas fa-users"></i></div>
                         </div>
+                        <div class="metric-value">{{ metrics.total_authors }}</div>
+                        <div class="metric-description">Contributing researchers</div>
+                    </div>
+
+                    <div class="card metric-card">
+                        <div class="metric-header">
+                            <div class="metric-title">Research Keywords</div>
+                            <div class="metric-icon"><i class="fas fa-tags"></i></div>
+                        </div>
+                        <div class="metric-value">{{ metrics.total_keywords }}</div>
+                        <div class="metric-description">Active research domains</div>
                     </div>
                 </div>
+
+                
+
+                <!-- Add this after the AI-Generated Insights card in dashboard-tab -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fas fa-chart-pie"></i>
+            Research Analytics
+        </div>
+        <div class="card-description">Key metrics and distributions</div>
+    </div>
+    <div class="card-content">
+        <div class="grid-2-col">
+            <div class="chart-container">
+                <canvas id="dashboard-top-cited-chart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="dashboard-top-funders-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-container" style="height: 350px; margin-top: 20px;">
+            <canvas id="dashboard-topics-chart"></canvas>
+        </div>
+    </div>
+</div>
 
                 <!-- AI-Generated Insights -->
                 <div class="card">
@@ -584,8 +718,16 @@
                         <div class="card-description">Key patterns and recommendations from publication analysis</div>
                     </div>
                     <div class="card-content">
-                        <div class="insights-grid" id="insights-grid">
-                            <!-- Insights will be populated by JavaScript -->
+                        <div class="insights-grid">
+                            {% for insight in insights %}
+                            <div class="insight-card">
+                                <div class="insight-title">
+                                    <span>{{ insight.icon }}</span>
+                                    <span>{{ insight.title }}</span>
+                                </div>
+                                <div class="insight-content">{{ insight.content }}</div>
+                            </div>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
@@ -603,15 +745,7 @@
                     <div class="card-content">
                         <div class="search-container">
                             <i class="fas fa-search search-icon"></i>
-                            <input type="text" class="search-input" id="search-input" placeholder="Search 608 NASA bioscience publications by title, abstract, or keywords...">
-                        </div>
-                        
-                        <div class="filters-grid" id="filters-grid">
-                            <!-- Filters will be populated by JavaScript -->
-                        </div>
-                        
-                        <div class="active-filters" id="active-filters">
-                            <!-- Active filters will be populated by JavaScript -->
+                            <input type="text" class="search-input" id="search-input" placeholder="Search {{ metrics.total_publications }} NASA bioscience publications...">
                         </div>
                         
                         <div id="search-results">
@@ -632,12 +766,12 @@
                         <div class="card-description">Interactive visualization of research concepts and relationships</div>
                     </div>
                     <div class="card-content">
-                        <div class="graph-container">
-                            <div class="graph-placeholder">
-                                <i class="fas fa-project-diagram"></i>
+                        <div style="height: 500px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                            <div style="text-align: center; color: var(--text-muted);">
+                                <i class="fas fa-project-diagram" style="font-size: 3rem; margin-bottom: 15px; color: var(--accent);"></i>
                                 <h3>Knowledge Graph Visualization</h3>
                                 <p>Interactive network of research concepts, publications, and relationships</p>
-                                <button class="btn btn-primary" style="margin-top: 15px; padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                <button onclick="loadKnowledgeGraph()" style="margin-top: 15px; padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem;">
                                     Generate Knowledge Graph
                                 </button>
                             </div>
@@ -651,7 +785,7 @@
                                 </div>
                                 <div class="card-content">
                                     <div id="research-clusters">
-                                        <!-- Research clusters will be populated by JavaScript -->
+                                        <p style="color: var(--text-muted);">Click "Generate Knowledge Graph" to view research clusters</p>
                                     </div>
                                 </div>
                             </div>
@@ -662,7 +796,7 @@
                                 </div>
                                 <div class="card-content">
                                     <div id="concept-relationships">
-                                        <!-- Concept relationships will be populated by JavaScript -->
+                                        <p style="color: var(--text-muted);">Click "Generate Knowledge Graph" to view concept relationships</p>
                                     </div>
                                 </div>
                             </div>
@@ -702,177 +836,198 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Saved Articles Tab -->
+            <div class="tab-content" id="saved-articles-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-bookmark"></i>
+                            Saved Articles
+                        </div>
+                        <div class="card-description">View and manage your saved NASA publications</div>
+                    </div>
+                    <div class="card-content">
+                        <div id="saved-articles-list">
+                            <p style="color: var(--text-muted);">You have not saved any articles yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot -->
+    <div class="chatbot-container">
+        <model-viewer
+            src="/static/chatbot.glb"
+            alt="Titan Chatbot"
+            shadow-intensity="1"
+            environment-image="neutral"
+            interaction-prompt="none"
+            camera-controls
+            disable-zoom
+            min-camera-orbit="90deg 90deg auto"
+            max-camera-orbit="90deg 90deg auto">
+        </model-viewer>
+    </div>
+
+    <!-- Chat window -->
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-header">
+            Titan
+            <div class="chat-header-buttons">
+                <span id="clearChat">🗑</span>
+                <span id="closeChat">✖</span>
+            </div>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+            <input type="text" id="chatInput" placeholder="Ask Titan something..." />
+            <button id="sendBtn">Send</button>
         </div>
     </div>
 
     <script>
-        // API Endpoints (mock for demonstration)
-        const API_ENDPOINTS = {
-            publications: '/api/publications',
-            metrics: '/api/metrics',
-            researchAreas: '/api/research-areas',
-            knowledgeGaps: '/api/knowledge-gaps',
-            insights: '/api/insights',
-            search: '/api/search',
-            knowledgeGraph: '/api/knowledge-graph',
-            analytics: '/api/analytics'
+        // Embed server-rendered data
+        const serverData = {
+            metrics: {{ metrics_json | safe }},
+            researchAreas: {{ research_areas_json | safe }},
+            knowledgeGaps: {{ knowledge_gaps_json | safe }},
+            insights: {{ insights_json | safe }},
+            analytics: {{ analytics_json | safe }}
         };
 
-        // Mock data for demonstration
-        const mockData = {
-            publications: [
-                { citationCount: 42, impactLevel: 'Critical', year: 2023, researchArea: ['Bone Loss', 'Physiology'] },
-                { citationCount: 28, impactLevel: 'High', year: 2022, researchArea: ['Plant Biology', 'Agriculture'] },
-                { citationCount: 35, impactLevel: 'Medium', year: 2023, researchArea: ['Radiation', 'Health'] },
-                { citationCount: 19, impactLevel: 'High', year: 2021, researchArea: ['Microbiome', 'Health'] },
-                { citationCount: 56, impactLevel: 'Critical', year: 2023, researchArea: ['Genetics', 'Radiation'] },
-                { citationCount: 31, impactLevel: 'Medium', year: 2022, researchArea: ['Behavior', 'Psychology'] },
-                { citationCount: 22, impactLevel: 'High', year: 2023, researchArea: ['Metabolism', 'Nutrition'] },
-                { citationCount: 47, impactLevel: 'Critical', year: 2022, researchArea: ['Bone Loss', 'Countermeasures'] },
-                { citationCount: 38, impactLevel: 'High', year: 2023, researchArea: ['Plant Biology', 'Genomics'] },
-                { citationCount: 29, impactLevel: 'Medium', year: 2021, researchArea: ['Radiation', 'Technology'] }
-            ],
-            metrics: {
-                totalPublications: 608,
-                highImpactCount: 284,
-                averageCitations: 24.7,
-                researchAreasCount: 47,
-                recentPublications: 142
-            },
-            researchAreas: [
-                { name: 'Bone Loss', count: 45 },
-                { name: 'Plant Biology', count: 38 },
-                { name: 'Radiation Effects', count: 32 },
-                { name: 'Immune System', count: 28 },
-                { name: 'Microbiome', count: 24 }
-            ],
-            knowledgeGaps: [
-                { area: "Long-term Mars Mission Health", severity: "Critical", progress: 23 },
-                { area: "Space Radiation Countermeasures", severity: "Critical", progress: 31 },
-                { area: "Closed-loop Ecosystem Stability", severity: "High", progress: 45 },
-                { area: "Microgravity Genetics", severity: "Medium", progress: 67 }
-            ],
-            insights: [
-                {
-                    icon: "🎯",
-                    title: "Mission Planning Priority",
-                    content: "Astronaut health research shows critical gaps in radiation protection. Recommend accelerating countermeasure development before Mars missions."
-                },
-                {
-                    icon: "🌱",
-                    title: "Space Agriculture Progress",
-                    content: "Plant biology research indicates promising advances in microgravity agriculture. Focus on scaling closed-loop food production systems."
-                },
-                {
-                    icon: "🔬",
-                    title: "Research Collaboration",
-                    content: "Strong correlation between ISS experiments and practical applications. Increase flight opportunities for high-impact biological research."
-                },
-                {
-                    icon: "📊",
-                    title: "Data Integration",
-                    content: "Cross-disciplinary studies show highest citation impact. Encourage multi-domain research approaches for breakthrough discoveries."
-                }
-            ]
-        };
+        // Store saved articles in memory
+        let savedArticles = [];
 
-        // API Service Functions
-        const apiService = {
-            async getMetrics() {
-        const response = await fetch(API_ENDPOINTS.metrics);
-        return response.json();
-    },
+        // Chatbot functionality
+        const chatbotModel = document.querySelector("model-viewer");
+        const chatWindow = document.getElementById("chatWindow");
+        const closeChat = document.getElementById("closeChat");
+        const clearChat = document.getElementById("clearChat");
+        const sendBtn = document.getElementById("sendBtn");
+        const chatInput = document.getElementById("chatInput");
+        const chatMessages = document.getElementById("chatMessages");
 
-            async getResearchAreas() {
-                return new Promise(resolve => {
-                    setTimeout(() => resolve(mockData.researchAreas), 500);
-                });
-            },
-
-            async getKnowledgeGaps() {
-                return new Promise(resolve => {
-                    setTimeout(() => resolve(mockData.knowledgeGaps), 500);
-                });
-            },
-
-            async getInsights() {
-                return new Promise(resolve => {
-                    setTimeout(() => resolve(mockData.insights), 500);
-                });
-            },
-
-            async searchPublications(query, filters) {
-                // Simulate API search
-                return new Promise(resolve => {
-                    setTimeout(() => {
-                        const results = mockData.publications.filter(pub => {
-                            // Simple search simulation
-                            return JSON.stringify(pub).toLowerCase().includes(query.toLowerCase());
-                        });
-                        resolve(results.slice(0, 5)); // Return first 5 results
-                    }, 800);
-                });
-            },
-
-            async getAnalyticsData() {
-                return new Promise(resolve => {
-                    setTimeout(() => resolve({
-                        trends: {
-                            labels: ['2018', '2019', '2020', '2021', '2022', '2023'],
-                            publications: [45, 52, 58, 67, 78, 85],
-                            citations: [18, 20, 22, 24, 25, 27]
-                        },
-                        impact: {
-                            labels: ['Critical', 'High', 'Medium', 'Low'],
-                            data: [85, 142, 257, 124]
-                        },
-                        researchAreas: {
-                            labels: ['Bone Loss', 'Plant Biology', 'Immunology', 'Radiation', 'Microbiome'],
-                            data: [450, 380, 320, 290, 240]
-                        },
-                        methodology: {
-                            labels: ['RNA Sequencing', 'Imaging', 'Cell Culture', 'Animal Models', 'Genetic Analysis'],
-                            data: [120, 95, 87, 76, 68]
-                        }
-                    }), 600);
-                });
+        // Load chat history
+        window.onload = () => {
+            let history = JSON.parse(localStorage.getItem("titanChat")) || [];
+            if (history.length === 0) {
+                addMessage("👋 I'm Titan, your guide to life in space. What shall we explore?", "bot", true);
+            } else {
+                history.forEach(msg => addMessage(msg.text, msg.sender, false));
             }
         };
 
-        // Initialize the application when the page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeNavigation();
-            initializeDashboard();
-            setupEventListeners();
+        function addMessage(text, sender, save = true) {
+            const msgDiv = document.createElement("div");
+            msgDiv.classList.add("message", sender);
+            msgDiv.textContent = text;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            if (save) {
+                let history = JSON.parse(localStorage.getItem("titanChat")) || [];
+                history.push({ text, sender });
+                localStorage.setItem("titanChat", JSON.stringify(history));
+            }
+        }
+
+        // Open chat
+        chatbotModel.addEventListener("click", () => {
+            chatWindow.classList.add("active");
+            chatbotModel.style.animationPlayState = "paused";
         });
 
+        // Close chat
+        closeChat.addEventListener("click", () => {
+            chatWindow.classList.remove("active");
+            chatbotModel.style.animationPlayState = "running";
+        });
+
+        // Clear chat
+        clearChat.addEventListener("click", () => {
+            localStorage.removeItem("titanChat");
+            chatMessages.innerHTML = "";
+            addMessage("👋 Chat cleared. I'm Titan, your guide to life in space. What shall we explore?", "bot", true);
+        });
+
+        // Send message
+        sendBtn.addEventListener("click", async () => {
+    let userText = chatInput.value.trim();
+    if (userText) {
+        addMessage(userText, "user");
+        chatInput.value = "";
+        
+        // Show typing indicator
+        const typingDiv = document.createElement("div");
+        typingDiv.classList.add("message", "bot");
+        typingDiv.textContent = "Titan is thinking...";
+        typingDiv.id = "typing-indicator";
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        try {
+            // Call the backend API
+            const response = await fetch('/api/chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: userText })
+            });
+            
+            // Remove typing indicator
+            const typingIndicator = document.getElementById("typing-indicator");
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+            
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            
+            const data = await response.json();
+            addMessage(data.response, "bot");
+            
+        } catch (error) {
+            console.error('Error:', error);
+            // Remove typing indicator
+            const typingIndicator = document.getElementById("typing-indicator");
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+            addMessage("Sorry, I'm having trouble connecting right now. Please try again.", "bot");
+        }
+    }
+});
+
+        chatInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendBtn.click();
+        });
+
+       
+
         function initializeNavigation() {
-            // Set up tab navigation
             const navLinks = document.querySelectorAll('.nav-link');
             navLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
                     
-                    // Remove active class from all tabs
                     navLinks.forEach(l => l.classList.remove('active'));
-                    
-                    // Add active class to clicked tab
                     this.classList.add('active');
                     
-                    // Hide all tab content
                     document.querySelectorAll('.tab-content').forEach(content => {
                         content.classList.remove('active');
                     });
                     
-                    // Show selected tab content
                     const tabId = this.getAttribute('data-tab');
                     document.getElementById(`${tabId}-tab`).classList.add('active');
                     
-                    // Update page title
                     const pageTitle = document.getElementById('page-title');
                     pageTitle.textContent = this.querySelector('span').textContent;
                     
-                    // Load data for the selected tab
                     loadTabData(tabId);
                 });
             });
@@ -881,7 +1036,7 @@
         async function loadTabData(tabId) {
             switch(tabId) {
                 case 'dashboard':
-                    await initializeDashboard();
+                    // Already loaded from server
                     break;
                 case 'analytics':
                     await initializeAnalytics();
@@ -890,151 +1045,306 @@
                     initializeSearch();
                     break;
                 case 'knowledge-graph':
-                    initializeKnowledgeGraph();
+                    // Knowledge graph loads on demand
                     break;
+                case 'saved-articles':
+                    displaySavedArticles();
+                    break;
+
             }
         }
 
-        async function initializeDashboard() {
+        async function loadKnowledgeGraph() {
             try {
-                // Show loading state
-                document.getElementById('metrics-grid').innerHTML = '<p>Loading metrics...</p>';
+                const response = await fetch('/api/knowledge-graph?limit=50');
+                const graphData = await response.json();
                 
-                // Fetch data from API
-                const [metrics, researchAreas, knowledgeGaps, insights] = await Promise.all([
-                    apiService.getMetrics(),
-                    apiService.getResearchAreas(),
-                    apiService.getKnowledgeGaps(),
-                    apiService.getInsights()
-                ]);
+                displayKnowledgeGraph(graphData);
                 
-                // Render dashboard components
-                renderMetrics(metrics);
-                renderResearchAreas(researchAreas);
-                renderKnowledgeGaps(knowledgeGaps);
-                renderInsights(insights);
+                // Load clusters and relationships
+                const clustersResponse = await fetch('/api/knowledge-graph/clusters');
+                const clustersData = await clustersResponse.json();
+                displayClusters(clustersData.clusters);
                 
-                // Update API status
-                document.getElementById('api-status').textContent = 'Data loaded successfully from NASA Bioscience API';
+                const relationsResponse = await fetch('/api/knowledge-graph/relationships');
+                const relationsData = await relationsResponse.json();
+                displayRelationships(relationsData.relationships);
+                
             } catch (error) {
-                console.error('Error loading dashboard data:', error);
-                document.getElementById('api-status').textContent = 'Error loading data from API';
-                document.getElementById('api-status').parentElement.style.background = '#fed7d7';
-                document.getElementById('api-status').parentElement.style.borderColor = '#feb2b2';
+                console.error('Error loading knowledge graph:', error);
             }
         }
 
-        function renderMetrics(metrics) {
-            const metricsGrid = document.getElementById('metrics-grid');
-
-            console.log(metrics)
+        function displayKnowledgeGraph(data) {
+    const graphContainer = document.querySelector('#knowledge-graph-tab .card-content > div:first-child');
+    
+    // Clear existing content
+    graphContainer.innerHTML = '';
+    graphContainer.style.height = '500px';
+    graphContainer.style.background = 'white';
+    graphContainer.style.position = 'relative';
+    
+    // Add SVG element
+    const svg = d3.select(graphContainer)
+        .append('svg')
+        .attr('width', '100%')
+        .attr('height', '500px')
+        .style('border-radius', '8px')
+        .style('border', '1px solid var(--border)');
+    
+    const width = graphContainer.offsetWidth;
+    const height = 500;
+    
+    // Create zoom behavior
+    const g = svg.append('g');
+    const zoom = d3.zoom()
+        .scaleExtent([0.5, 3])
+        .on('zoom', (event) => {
+            g.attr('transform', event.transform);
+        });
+    svg.call(zoom);
+    
+    // Color scale for different node types
+    const colorScale = {
+        'biological_system': '#3182ce',
+        'experiment_type': '#38a169',
+        'organism': '#d69e2e',
+        'default': '#805ad5'
+    };
+    
+    // Create force simulation
+    const simulation = d3.forceSimulation(data.nodes)
+        .force('link', d3.forceLink(data.edges)
+            .id(d => d.id)
+            .distance(100))
+        .force('charge', d3.forceManyBody().strength(-400))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('collision', d3.forceCollide().radius(d => (d.size || 5) * 3));
+    
+    // Create links
+    const link = g.append('g')
+        .selectAll('line')
+        .data(data.edges)
+        .join('line')
+        .attr('stroke', '#cbd5e0')
+        .attr('stroke-opacity', 0.6)
+        .attr('stroke-width', d => Math.sqrt(d.weight || 1) * 0.8);
+    
+    // Create nodes
+    const node = g.append('g')
+        .selectAll('circle')
+        .data(data.nodes)
+        .join('circle')
+        .attr('r', d => (d.size || 5) * 2.5)
+        .attr('fill', d => colorScale[d.type] || colorScale.default)
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 2)
+        .style('cursor', 'pointer')
+        .call(d3.drag()
+            .on('start', dragstarted)
+            .on('drag', dragged)
+            .on('end', dragended))
+        .on('mouseover', function(event, d) {
+            d3.select(this)
+                .transition()
+                .duration(200)
+                .attr('r', (d.size || 5) * 3.5)
+                .attr('stroke', '#3182ce')
+                .attr('stroke-width', 3);
             
-            const metricsData = [
-                {
-                    title: 'Total Publications',
-                    value: metrics.total_publications,
-                    description: `+${metrics.recentPublications} in last 2 years`,
-                    icon: 'fas fa-book-open'
-                },
-                {
-                    title: 'High Impact Research',
-                    value: metrics.highImpactCount,
-                    description: `${Math.round((metrics.highImpactCount / metrics.totalPublications) * 100)}% of total publications`,
-                    icon: 'fas fa-bullseye'
-                },
-                {
-                    title: 'Average Citations',
-                    value: metrics.averageCitations,
-                    description: 'Per publication',
-                    icon: 'fas fa-chart-line'
-                },
-                {
-                    title: 'Research Areas',
-                    value: metrics.researchAreasCount,
-                    description: 'Active research domains',
-                    icon: 'fas fa-bolt'
-                }
-            ];
+            // Show tooltip
+            const tooltip = document.createElement('div');
+            tooltip.id = 'graph-tooltip';
+            tooltip.style.cssText = `
+                position: absolute;
+                background: rgba(0, 0, 0, 0.85);
+                color: white;
+                padding: 10px;
+                border-radius: 6px;
+                font-size: 13px;
+                pointer-events: none;
+                z-index: 1000;
+                max-width: 200px;
+            `;
+            tooltip.innerHTML = `<strong>${d.label}</strong><br>Connections: ${d.size || 'N/A'}`;
+            tooltip.style.left = (event.pageX + 10) + 'px';
+            tooltip.style.top = (event.pageY - 10) + 'px';
+            document.body.appendChild(tooltip);
+        })
+        .on('mouseout', function(event, d) {
+            d3.select(this)
+                .transition()
+                .duration(200)
+                .attr('r', (d.size || 5) * 2.5)
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2);
+            
+            const tooltip = document.getElementById('graph-tooltip');
+            if (tooltip) tooltip.remove();
+        });
+    
+    // Create labels
+    const label = g.append('g')
+        .selectAll('text')
+        .data(data.nodes)
+        .join('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '.35em')
+        .attr('font-size', '11px')
+        .attr('font-weight', '500')
+        .attr('pointer-events', 'none')
+        .style('text-shadow', '0 1px 2px white, 1px 0 2px white, -1px 0 2px white, 0 -1px 2px white')
+        .text(d => d.label);
+    
+    // Update positions on tick
+    simulation.on('tick', () => {
+        link
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y);
+        
+        node
+            .attr('cx', d => d.x)
+            .attr('cy', d => d.y);
+        
+        label
+            .attr('x', d => d.x)
+            .attr('y', d => d.y);
+    });
+    
+    // Drag functions
+    function dragstarted(event) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        event.subject.fx = event.subject.x;
+        event.subject.fy = event.subject.y;
+    }
+    
+    function dragged(event) {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+    }
+    
+    function dragended(event) {
+        if (!event.active) simulation.alphaTarget(0);
+        event.subject.fx = null;
+        event.subject.fy = null;
+    }
+    
+    // Add controls overlay
+    const controls = document.createElement('div');
+    controls.style.cssText = `
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 12px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        z-index: 10;
+    `;
+    
+    const resetBtn = document.createElement('button');
+    resetBtn.textContent = 'Reset View';
+    resetBtn.style.cssText = `
+        display: block;
+        width: 100%;
+        padding: 8px 12px;
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    `;
+    resetBtn.onclick = () => {
+        svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
+    };
+    
+    const toggleBtn = document.createElement('button');
+    toggleBtn.textContent = 'Toggle Labels';
+    toggleBtn.style.cssText = resetBtn.style.cssText;
+    toggleBtn.style.marginBottom = '0';
+    let labelsVisible = true;
+    toggleBtn.onclick = () => {
+        labelsVisible = !labelsVisible;
+        label.style('opacity', labelsVisible ? 1 : 0);
+    };
+    
+    controls.appendChild(resetBtn);
+    controls.appendChild(toggleBtn);
+    graphContainer.appendChild(controls);
+    
+    // Add stats overlay
+    const stats = document.createElement('div');
+    stats.style.cssText = `
+        position: absolute;
+        bottom: 15px;
+        left: 15px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 12px 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        font-size: 0.85rem;
+        color: var(--text-light);
+    `;
+    stats.innerHTML = `
+        <strong style="color: var(--primary);">Graph Stats:</strong><br>
+        Concepts: ${data.nodes.length} | Relationships: ${data.edges.length}
+    `;
+    graphContainer.appendChild(stats);
+}
 
-            metricsGrid.innerHTML = metricsData.map(metric => `
-                <div class="card metric-card">
-                    <div class="metric-header">
-                        <div class="metric-title">${metric.title}</div>
-                        <div class="metric-icon"><i class="${metric.icon}"></i></div>
-                    </div>
-                    <div class="metric-value">${metric.value}</div>
-                    <div class="metric-description">${metric.description}</div>
+        function displayClusters(clusters) {
+            const clustersDiv = document.getElementById('research-clusters');
+            if (!clusters || clusters.length === 0) {
+                clustersDiv.innerHTML = '<p style="color: var(--text-muted);">No clusters found</p>';
+                return;
+            }
+            
+            clustersDiv.innerHTML = clusters.map((cluster, index) => `
+                <div style="margin-bottom: 15px; padding: 12px; background: #f8fafc; border-radius: 6px; border-left: 3px solid var(--accent);">
+                    <div style="font-weight: 600; margin-bottom: 5px;">Cluster ${index + 1}: ${cluster.name || 'Research Area'}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-light);">${cluster.description || cluster.keywords || 'Related research topics'}</div>
+                    ${cluster.count ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">${cluster.count} publications</div>` : ''}
                 </div>
             `).join('');
         }
 
-        function renderResearchAreas(researchAreas) {
-            const researchAreasContainer = document.getElementById('research-areas');
+        function displayRelationships(relationships) {
+            const relationsDiv = document.getElementById('concept-relationships');
+            if (!relationships || relationships.length === 0) {
+                relationsDiv.innerHTML = '<p style="color: var(--text-muted);">No relationships found</p>';
+                return;
+            }
             
-            const maxCount = Math.max(...researchAreas.map(area => area.count));
-            
-            researchAreasContainer.innerHTML = researchAreas.map(area => {
-                const percentage = (area.count / maxCount) * 100;
-                
-                return `
-                    <div class="progress-container">
-                        <div class="progress-header">
-                            <div class="progress-label">${area.name}</div>
-                            <div class="progress-count">${area.count} publications</div>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${percentage}%"></div>
-                        </div>
+            relationsDiv.innerHTML = relationships.map(rel => `
+                <div style="margin-bottom: 12px; padding: 10px; background: #f8fafc; border-radius: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem;">
+                        <span style="font-weight: 500; color: var(--accent);">${rel.source || rel.concept1}</span>
+                        <i class="fas fa-arrow-right" style="color: var(--text-muted); font-size: 0.7rem;"></i>
+                        <span style="font-weight: 500; color: var(--accent);">${rel.target || rel.concept2}</span>
                     </div>
-                `;
-            }).join('');
-        }
-
-        function renderKnowledgeGaps(knowledgeGaps) {
-            const knowledgeGapsContainer = document.getElementById('knowledge-gaps');
-            
-            knowledgeGapsContainer.innerHTML = knowledgeGaps.map(gap => {
-                let badgeClass = 'badge-medium';
-                if (gap.severity === 'Critical') badgeClass = 'badge-critical';
-                if (gap.severity === 'High') badgeClass = 'badge-high';
-                
-                return `
-                    <div class="progress-container">
-                        <div class="progress-header">
-                            <div class="progress-label">${gap.area}</div>
-                            <div class="${badgeClass} badge">${gap.severity}</div>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${gap.progress}%"></div>
-                        </div>
-                        <div style="text-align: right; margin-top: 5px;">
-                            <span class="progress-count">${gap.progress}% addressed</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderInsights(insights) {
-            const insightsGrid = document.getElementById('insights-grid');
-            
-            insightsGrid.innerHTML = insights.map(insight => `
-                <div class="insight-card">
-                    <div class="insight-title">
-                        <span>${insight.icon}</span>
-                        <span>${insight.title}</span>
-                    </div>
-                    <div class="insight-content">${insight.content}</div>
+                    ${rel.strength ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">Strength: ${rel.strength}</div>` : ''}
                 </div>
             `).join('');
         }
 
         async function initializeAnalytics() {
-            try {
-                const analyticsData = await apiService.getAnalyticsData();
+            // Use server-rendered data if available, otherwise fetch
+            const analyticsData = serverData.analytics;
+            
+            if (analyticsData && Object.keys(analyticsData).length > 0) {
                 renderAnalyticsCharts(analyticsData);
-            } catch (error) {
-                console.error('Error loading analytics data:', error);
+            } else {
+                try {
+                    const response = await fetch('/api/analytics');
+                    const data = await response.json();
+                    renderAnalyticsCharts(data);
+                } catch (error) {
+                    console.error('Error loading analytics:', error);
+                }
             }
         }
 
@@ -1068,9 +1378,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            position: 'top',
-                        }
+                        legend: { position: 'top' },
+                        title: { display: true, text: 'Publication Trends Over Time' }
                     }
                 }
             });
@@ -1083,9 +1392,7 @@
                     labels: data.impact.labels,
                     datasets: [{
                         data: data.impact.data,
-                        backgroundColor: [
-                            '#e53e3e', '#d69e2e', '#38a169', '#a0aec0'
-                        ],
+                        backgroundColor: ['#e53e3e', '#d69e2e', '#38a169', '#a0aec0'],
                         borderWidth: 0
                     }]
                 },
@@ -1093,9 +1400,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            position: 'right',
-                        }
+                        legend: { position: 'right' },
+                        title: { display: true, text: 'Impact Distribution' }
                     }
                 }
             });
@@ -1117,9 +1423,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: false
-                        }
+                        legend: { display: false },
+                        title: { display: true, text: 'Research Area Impact' }
                     }
                 }
             });
@@ -1141,23 +1446,17 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: false
-                        }
+                        legend: { display: false },
+                        title: { display: true, text: 'Methodology Distribution' }
                     },
                     scales: {
-                        x: {
-                            ticks: {
-                                maxRotation: 45
-                            }
-                        }
+                        x: { ticks: { maxRotation: 45 } }
                     }
                 }
             });
         }
 
         function initializeSearch() {
-            // Set up search functionality
             const searchInput = document.getElementById('search-input');
             let searchTimeout;
             
@@ -1174,10 +1473,13 @@
 
         async function performSearch(query) {
             try {
-                const results = await apiService.searchPublications(query, {});
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=20`);
+                const results = await response.json();
                 displaySearchResults(results, query);
             } catch (error) {
                 console.error('Error performing search:', error);
+                document.getElementById('search-results').innerHTML = 
+                    '<p style="color: var(--danger);">Error performing search. Please try again.</p>';
             }
         }
 
@@ -1190,18 +1492,48 @@
             }
             
             resultsContainer.innerHTML = `
-                <h3>Search Results for "${query}"</h3>
+                <h3 style="margin-bottom: 15px;">Found ${results.length} results for "${query}"</h3>
                 <div class="publications-list">
                     ${results.map(pub => `
                         <div class="card" style="margin-bottom: 15px;">
                             <div class="card-header">
-                                <div class="card-title">${pub.researchArea.join(', ')}</div>
-                                <div class="badge ${pub.impactLevel === 'Critical' ? 'badge-critical' : pub.impactLevel === 'High' ? 'badge-high' : 'badge-medium'}">
-                                    ${pub.impactLevel} Impact
-                                </div>
+                                <div class="card-title" style="font-size: 1rem;">${pub.title}</div>
                             </div>
                             <div class="card-content">
-                                <p><strong>Year:</strong> ${pub.year} | <strong>Citations:</strong> ${pub.citationCount}</p>
+                                <p><strong>PMCID:</strong> 
+                                    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/${pub.pmcid}/" target="_blank" style="color: var(--accent); text-decoration: none;">${pub.pmcid}</a>
+                                    | <strong>Section:</strong> ${pub.section}
+                                </p>
+                                <p style="margin-top: 10px; color: var(--text-light);">${pub.snippet}</p>
+                                <p style="margin-top: 10px; font-size: 0.85rem;">
+                                    <strong>Relevance:</strong> ${(pub.relevance_score * 100).toFixed(1)}%
+                                    ${pub.journal ? ` | <strong>Journal:</strong> ${pub.journal}` : ''}
+                                    ${pub.publication_date ? ` | <strong>Date:</strong> ${pub.publication_date}` : ''}
+                                </p>
+                                ${pub.keywords && pub.keywords.length > 0 ? `
+                                    <div style="margin-top: 12px;">
+                                        <strong style="font-size: 0.85rem;">Keywords:</strong>
+                                        <div style="margin-top: 5px; display: flex; flex-wrap: wrap; gap: 6px;">
+                                            ${pub.keywords.map(keyword => `
+                                                <span style="display: inline-block; padding: 4px 10px; background: #e6f2ff; color: var(--accent); border-radius: 12px; font-size: 0.8rem; font-weight: 500;">
+                                                    ${keyword}
+                                                </span>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                                    <button onclick="saveArticle(${pub.article_id}, '${pub.pmcid}', '${pub.title.replace(/'/g, "\\'")}', '${pub.snippet.replace(/'/g, "\\'")}', '${pub.journal || ''}', '${pub.publication_date || ''}')"
+                                            style="padding: 8px 16px; background: var(--accent); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-bookmark"></i>
+                                        Save Article
+                                    </button>
+                                    <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/${pub.pmcid}/" target="_blank" 
+                                       style="padding: 8px 16px; background: var(--secondary); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-external-link-alt"></i>
+                                        View Full Article
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     `).join('')}
@@ -1209,14 +1541,181 @@
             `;
         }
 
-        function initializeKnowledgeGraph() {
-            // Placeholder for knowledge graph initialization
-            console.log('Initializing knowledge graph...');
+        function saveArticle(articleId, pmcid, title, snippet, journal, date) {
+            // Check if already saved
+            if (savedArticles.find(a => a.id === articleId)) {
+                alert(`Article ${pmcid} is already saved.`);
+                return;
+            }
+
+            const saved = {
+                id: articleId,
+                pmcid: pmcid,
+                title: title,
+                snippet: snippet,
+                link: `https://www.ncbi.nlm.nih.gov/pmc/articles/${pmcid}/`,
+                journal: journal,
+                date: date
+            };
+
+            savedArticles.push(saved);
+            alert(`Article ${pmcid} saved successfully! Total saved: ${savedArticles.length}`);
+            console.log('Saved articles:', savedArticles);
         }
 
-        function setupEventListeners() {
-            // Additional event listeners can be added here
+        function displaySavedArticles() {
+            const container = document.getElementById('saved-articles-list');
+
+            if (!savedArticles || savedArticles.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted);">You have not saved any articles yet.</p>';
+                return;
+            }
+
+            container.innerHTML = savedArticles.map((article, index) => `
+                <div class="card" style="margin-bottom: 15px;">
+                    <div class="card-header">
+                        <div class="card-title" style="font-size: 1rem;">${article.title}</div>
+                    </div>
+                    <div class="card-content">
+                        <p><strong>PMCID:</strong> 
+                            <a href="${article.link}" target="_blank" style="color: var(--accent); text-decoration: none;">${article.pmcid}</a>
+                            ${article.journal ? ` | <strong>Journal:</strong> ${article.journal}` : ''}
+                            ${article.date ? ` | <strong>Date:</strong> ${article.date}` : ''}
+                        </p>
+                        <p style="margin-top: 10px; color: var(--text-light);">${article.snippet}</p>
+                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                            <button onclick="removeSavedArticle(${index})" 
+                                    style="padding: 8px 16px; background: var(--danger); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-trash"></i>
+                                Remove
+                            </button>
+                            <a href="${article.link}" target="_blank" 
+                               style="padding: 8px 16px; background: var(--secondary); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-external-link-alt"></i>
+                                View Article
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
+
+        function removeSavedArticle(index) {
+            const article = savedArticles[index];
+            if (confirm(`Remove "${article.pmcid}" from saved articles?`)) {
+                savedArticles.splice(index, 1);
+                displaySavedArticles();
+                console.log('Article removed. Remaining:', savedArticles);
+            }
+        }
+
+        // Add this new function after renderAnalyticsCharts
+function renderDashboardCharts(data) {
+    // Top Cited Articles Chart
+    if (data.topCited) {
+        const topCitedCtx = document.getElementById('dashboard-top-cited-chart').getContext('2d');
+        new Chart(topCitedCtx, {
+            type: 'bar',
+            data: {
+                labels: data.topCited.labels,
+                datasets: [{
+                    label: 'Citations',
+                    data: data.topCited.data,
+                    backgroundColor: '#d69e2e',
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Top 10 Most Cited Articles' }
+                },
+                scales: {
+                    x: { 
+                        beginAtZero: true,
+                        title: { display: true, text: 'Citations' }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Top Funders Chart
+    if (data.topFunders) {
+        const fundersCtx = document.getElementById('dashboard-top-funders-chart').getContext('2d');
+        new Chart(fundersCtx, {
+            type: 'doughnut',
+            data: {
+                labels: data.topFunders.labels,
+                datasets: [{
+                    data: data.topFunders.data,
+                    backgroundColor: [
+                        '#3182ce', '#38a169', '#d69e2e', '#e53e3e', '#805ad5',
+                        '#dd6b20', '#319795', '#d53f8c', '#4299e1', '#48bb78'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right' },
+                    title: { display: true, text: 'Top Funding Sources' }
+                }
+            }
+        });
+    }
+    
+    // Topics Distribution Chart
+    if (data.topicsDistribution) {
+        const topicsCtx = document.getElementById('dashboard-topics-chart').getContext('2d');
+        new Chart(topicsCtx, {
+            type: 'bar',
+            data: {
+                labels: data.topicsDistribution.labels,
+                datasets: [{
+                    label: 'Articles',
+                    data: data.topicsDistribution.data,
+                    backgroundColor: '#805ad5',
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Research Topics Distribution' }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        title: { display: true, text: 'Number of Articles' }
+                    },
+                    x: {
+                        ticks: { maxRotation: 45, minRotation: 45 }
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Update the DOMContentLoaded section
+document.addEventListener('DOMContentLoaded', function() {
+    initializeNavigation();
+    
+    // Render dashboard charts on load
+    if (serverData.analytics) {
+        renderDashboardCharts(serverData.analytics);
+    }
+    
+    console.log('Dashboard data loaded from server:', serverData);
+});
     </script>
 </body>
 </html>

@@ -27,7 +27,7 @@ DB_CONFIG = {
 }
 
 
-INPUT_JSON = "articles_detailed.json"
+INPUT_JSON = "merged_articles.json"
 
 # Load spaCy model for NLP
 try:
@@ -286,33 +286,145 @@ class DatabaseLoader:
 
     def load_article(self, article_data: dict) -> int:
         """Load article with enhanced metadata"""
-        pmcid = article_data["pmcid"]
-        pmid = article_data.get("pmid")
-        title = article_data.get("title", "Untitled")
+        try:
+            pmcid = article_data["pmcid"]
+            pmid = article_data.get("pmid")
+            title = article_data.get("title", "Untitled")
 
-        metadata = article_data.get("metadata", {})
-        pub_date = self.parse_date(metadata.get("publication_date"))
-        pub_date = self.normalize_date(pub_date)
+            metadata = article_data.get("metadata", {})
+            pub_date = self.parse_date(metadata.get("publication_date"))
+            pub_date = self.normalize_date(pub_date)
 
-        journal = metadata.get("journal")
-        doi = metadata.get("doi")
+            journal = metadata.get("journal")
+            doi = metadata.get("doi")
 
+            # Ensure citations is always an integer
+            citations = metadata.get("citation_count")
+            if citations is None or citations == "":
+                citations = 0
+            try:
+                citations = int(citations)
+            except (ValueError, TypeError):
+                citations = 0
+
+            self.cursor.execute(
+                """
+                INSERT INTO articles (pmcid, title, publication_date, journal, doi, citations)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (pmcid) DO UPDATE 
+                SET title = EXCLUDED.title,
+                    publication_date = EXCLUDED.publication_date,
+                    journal = EXCLUDED.journal,
+                    doi = EXCLUDED.doi,
+                    citations = EXCLUDED.citations
+                RETURNING id
+            """,
+                (pmcid, title, pub_date, journal, doi, citations),
+            )
+
+            result = self.cursor.fetchone()
+            if result is None:
+                raise Exception(
+                    f"Failed to insert/update article {pmcid} - no ID returned"
+                )
+
+            article_id = result[0]
+            if article_id is None:
+                raise Exception(f"Failed to get article ID for {pmcid}")
+
+            return article_id
+
+        except Exception as e:
+            print(f"DEBUG - Error in load_article for {pmcid}:")
+            print(f"  Title: {title}")
+            print(f"  Date: {pub_date}")
+            print(f"  Citations: {citations}")
+            print(f"  Error: {str(e)}")
+            raise
+
+    def load_topics(self, article_id: int, article_data: dict):
+        """Load topics for article"""
+        # Get topic from article data
+        topic_name = article_data.get("topic")
+
+        if not topic_name or topic_name.strip() == "":
+            return
+
+        topic_name = topic_name.strip()
+
+        # Insert or get topic
         self.cursor.execute(
             """
-            INSERT INTO articles (pmcid, title, publication_date, journal, doi)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (pmcid) DO UPDATE 
-            SET title = EXCLUDED.title,
-                publication_date = EXCLUDED.publication_date,
-                journal = EXCLUDED.journal,
-                doi = EXCLUDED.doi
+            INSERT INTO topics (name)
+            VALUES (%s)
+            ON CONFLICT (name) DO NOTHING
             RETURNING id
         """,
-            (pmcid, title, pub_date, journal, doi),
+            (topic_name,),
         )
 
-        article_id = self.cursor.fetchone()[0]
-        return article_id
+        result = self.cursor.fetchone()
+        if result:
+            topic_id = result[0]
+        else:
+            # Topic already exists, get its ID
+            self.cursor.execute("SELECT id FROM topics WHERE name = %s", (topic_name,))
+            topic_id = self.cursor.fetchone()[0]
+
+        # Link article to topic
+        self.cursor.execute(
+            """
+            INSERT INTO article_topics (article_id, topic_id, is_primary)
+            VALUES (%s, %s, %s)
+            ON CONFLICT DO NOTHING
+        """,
+            (article_id, topic_id, True),  # Mark as primary topic
+        )
+
+    def load_funding_sources(self, article_id: int, article_data: dict):
+        """Load funding sources for article"""
+        metadata = article_data.get("metadata", {})
+        funding_sources = metadata.get("funding_sources", [])
+
+        if not funding_sources:
+            return
+
+        for source_name in funding_sources:
+            if not source_name or source_name.strip() == "":
+                continue
+
+            source_name = source_name.strip()
+
+            # Insert or get funding source
+            self.cursor.execute(
+                """
+                INSERT INTO funding_sources (name)
+                VALUES (%s)
+                ON CONFLICT (name) DO NOTHING
+                RETURNING id
+            """,
+                (source_name,),
+            )
+
+            result = self.cursor.fetchone()
+            if result:
+                source_id = result[0]
+            else:
+                # Source already exists, get its ID
+                self.cursor.execute(
+                    "SELECT id FROM funding_sources WHERE name = %s", (source_name,)
+                )
+                source_id = self.cursor.fetchone()[0]
+
+            # Link article to funding source
+            self.cursor.execute(
+                """
+                INSERT INTO article_funding (article_id, funding_source_id)
+                VALUES (%s, %s)
+                ON CONFLICT DO NOTHING
+            """,
+                (article_id, source_id),
+            )
 
     def load_authors(self, article_id: int, authors_data: List):
         """Load authors with enhanced information (affiliations, emails)"""
@@ -646,6 +758,12 @@ class DatabaseLoader:
             # 8. Link to NASA experiments
             self.load_nasa_experiments(article_id, article_data)
 
+            # 9. Load topics
+            self.load_topics(article_id, article_data)
+
+            # 10. Load funding sources
+            self.load_funding_sources(article_id, article_data)
+
             self.conn.commit()
             return article_id
 
@@ -673,19 +791,21 @@ def load_all_articles(json_file: str, db_config: dict, batch_size: int = 50):
     processed = 0
     errors = []
 
-    with DatabaseLoader(db_config) as loader:
-        for i, article in enumerate(articles, 1):
-            try:
-                article_id = loader.process_article(article)
-                processed += 1
+    # The 'with' statement is now INSIDE the loop
+    for i, article in enumerate(articles, 1):
+        pmcid = article.get("pmcid", "unknown")
+        try:
+            # A new connection is created for each article
+            with DatabaseLoader(db_config) as loader:
+                loader.process_article(article)
 
-                if i % batch_size == 0:
-                    print(f"✓ Processed {i}/{len(articles)} articles...")
+            processed += 1
+            if i % batch_size == 0:
+                print(f"✓ Processed {i}/{len(articles)} articles...")
 
-            except Exception as e:
-                pmcid = article.get("pmcid", "unknown")
-                errors.append((pmcid, str(e)))
-                print(f"✗ {pmcid}: {e}")
+        except Exception as e:
+            errors.append((pmcid, str(e)))
+            print(f"✗ {pmcid}: {e}")
 
     print("\n" + "=" * 60)
     print("PROCESSING COMPLETE")
@@ -787,6 +907,44 @@ def print_database_stats(db_config: dict):
     # Organisms
     cursor.execute("SELECT COUNT(*) FROM organisms")
     print(f"\nDetected organisms: {cursor.fetchone()[0]}")
+
+    # Topics
+    cursor.execute("SELECT COUNT(*) FROM topics")
+    topics_count = cursor.fetchone()[0]
+    print(f"\nTopics: {topics_count}")
+
+    cursor.execute(
+        """
+        SELECT t.name, COUNT(at.article_id) as cnt
+        FROM topics t
+        LEFT JOIN article_topics at ON t.id = at.topic_id
+        GROUP BY t.name
+        ORDER BY cnt DESC
+        LIMIT 10
+    """
+    )
+    print("\nTop 10 topics by article count:")
+    for topic, count in cursor.fetchall():
+        print(f"  {topic}: {count} articles")
+
+    # Funding sources
+    cursor.execute("SELECT COUNT(*) FROM funding_sources")
+    funding_count = cursor.fetchone()[0]
+    print(f"\nFunding sources: {funding_count}")
+
+    cursor.execute(
+        """
+        SELECT fs.name, COUNT(af.article_id) as cnt
+        FROM funding_sources fs
+        LEFT JOIN article_funding af ON fs.id = af.funding_source_id
+        GROUP BY fs.name
+        ORDER BY cnt DESC
+        LIMIT 10
+    """
+    )
+    print("\nTop 10 funding sources:")
+    for source, count in cursor.fetchall():
+        print(f"  {source}: {count} articles")
 
     cursor.close()
     conn.close()

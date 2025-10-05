@@ -60,6 +60,7 @@ class Articles(Base):
             persisted=True,
         ),
     )
+    citations: Mapped[Optional[int]] = mapped_column(Integer)
 
     organism: Mapped[list["Organisms"]] = relationship(
         "Organisms", secondary="article_organisms", back_populates="article"
@@ -80,6 +81,9 @@ class Articles(Base):
     article_experiments: Mapped[list["ArticleExperiments"]] = relationship(
         "ArticleExperiments", back_populates="article"
     )
+    article_funding: Mapped[list["ArticleFunding"]] = relationship(
+        "ArticleFunding", back_populates="article"
+    )
     article_keywords: Mapped[list["ArticleKeywords"]] = relationship(
         "ArticleKeywords", back_populates="article"
     )
@@ -95,6 +99,9 @@ class Articles(Base):
     )
     article_sections: Mapped[list["ArticleSections"]] = relationship(
         "ArticleSections", back_populates="article"
+    )
+    article_topics: Mapped[list["ArticleTopics"]] = relationship(
+        "ArticleTopics", back_populates="article"
     )
 
 
@@ -115,6 +122,27 @@ class Authors(Base):
 
     article_authors: Mapped[list["ArticleAuthors"]] = relationship(
         "ArticleAuthors", back_populates="author"
+    )
+
+
+class FundingSources(Base):
+    __tablename__ = "funding_sources"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="funding_sources_pkey"),
+        UniqueConstraint("name", name="funding_sources_name_key"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    abbreviation: Mapped[Optional[str]] = mapped_column(String(50))
+    country: Mapped[Optional[str]] = mapped_column(String(100))
+    source_type: Mapped[Optional[str]] = mapped_column(String(50))
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTime, server_default=text("CURRENT_TIMESTAMP")
+    )
+
+    article_funding: Mapped[list["ArticleFunding"]] = relationship(
+        "ArticleFunding", back_populates="funding_source"
     )
 
 
@@ -181,6 +209,25 @@ class Organisms(Base):
     )
 
 
+class Topics(Base):
+    __tablename__ = "topics"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="topics_pkey"),
+        UniqueConstraint("name", name="topics_name_key"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTime, server_default=text("CURRENT_TIMESTAMP")
+    )
+
+    article_topics: Mapped[list["ArticleTopics"]] = relationship(
+        "ArticleTopics", back_populates="topic"
+    )
+
+
 class Users(Base):
     __tablename__ = "users"
     __table_args__ = (
@@ -196,31 +243,37 @@ class Users(Base):
     messages: Mapped[list["Messages"]] = relationship("Messages", back_populates="user")
 
 
-class Messages(Base):
-    __tablename__ = "messages"
-    __table_args__ = (
-        CheckConstraint(
-            "direction::text = ANY (ARRAY['inbound'::character varying, 'outbound'::character varying]::text[])",
-            name="messages_direction_check",
-        ),
-        ForeignKeyConstraint(
-            ["user_id"], ["users.id"], ondelete="CASCADE", name="messages_user_id_fkey"
-        ),
-        PrimaryKeyConstraint("id", name="messages_pkey"),
-        Index("idx_messages_user_type", "user_id", "created_at"),
-    )
+t_v_article_sections_summary = Table(
+    "v_article_sections_summary",
+    Base.metadata,
+    Column("pmcid", String(50)),
+    Column("title", Text),
+    Column("section_count", BigInteger),
+    Column("total_words", BigInteger),
+    Column("available_sections", ARRAY(Text())),
+)
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, server_default=text("gen_random_uuid()")
-    )
-    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
-    direction: Mapped[str] = mapped_column(String(50), nullable=False)
-    text_content: Mapped[Optional[str]] = mapped_column(Text)
-    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
-        DateTime, server_default=text("now()")
-    )
 
-    user: Mapped["Users"] = relationship("Users", back_populates="messages")
+t_v_articles_with_authors = Table(
+    "v_articles_with_authors",
+    Base.metadata,
+    Column("id", Integer),
+    Column("pmcid", String(50)),
+    Column("title", Text),
+    Column("publication_date", Date),
+    Column("journal", String(255)),
+    Column("authors", Text),
+)
+
+
+t_v_research_topics = Table(
+    "v_research_topics",
+    Base.metadata,
+    Column("keyword", String(255)),
+    Column("category", Text),
+    Column("article_count", BigInteger),
+    Column("avg_relevance", Double(53)),
+)
 
 
 class ArticleAuthors(Base):
@@ -318,6 +371,40 @@ class ArticleExperiments(Base):
     )
     experiment: Mapped["NasaExperiments"] = relationship(
         "NasaExperiments", back_populates="article_experiments"
+    )
+
+
+class ArticleFunding(Base):
+    __tablename__ = "article_funding"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["article_id"],
+            ["articles.id"],
+            ondelete="CASCADE",
+            name="article_funding_article_id_fkey",
+        ),
+        ForeignKeyConstraint(
+            ["funding_source_id"],
+            ["funding_sources.id"],
+            ondelete="CASCADE",
+            name="article_funding_funding_source_id_fkey",
+        ),
+        PrimaryKeyConstraint(
+            "article_id", "funding_source_id", name="article_funding_pkey"
+        ),
+        Index("idx_article_funding_article", "article_id"),
+        Index("idx_article_funding_source", "funding_source_id"),
+    )
+
+    article_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    funding_source_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    grant_number: Mapped[Optional[str]] = mapped_column(String(100))
+
+    article: Mapped["Articles"] = relationship(
+        "Articles", back_populates="article_funding"
+    )
+    funding_source: Mapped["FundingSources"] = relationship(
+        "FundingSources", back_populates="article_funding"
     )
 
 
@@ -472,34 +559,63 @@ class ArticleSections(Base):
     )
 
 
-t_v_article_sections_summary = Table(
-    "v_article_sections_summary",
-    Base.metadata,
-    Column("pmcid", String(50)),
-    Column("title", Text),
-    Column("section_count", BigInteger),
-    Column("total_words", BigInteger),
-    Column("available_sections", ARRAY(Text())),
-)
+class ArticleTopics(Base):
+    __tablename__ = "article_topics"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["article_id"],
+            ["articles.id"],
+            ondelete="CASCADE",
+            name="article_topics_article_id_fkey",
+        ),
+        ForeignKeyConstraint(
+            ["topic_id"],
+            ["topics.id"],
+            ondelete="CASCADE",
+            name="article_topics_topic_id_fkey",
+        ),
+        PrimaryKeyConstraint("article_id", "topic_id", name="article_topics_pkey"),
+        Index("idx_article_topics_article", "article_id"),
+        Index("idx_article_topics_topic", "topic_id"),
+    )
+
+    article_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    topic_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    relevance_score: Mapped[Optional[float]] = mapped_column(
+        Double(53), server_default=text("1.0")
+    )
+    is_primary: Mapped[Optional[bool]] = mapped_column(
+        Boolean, server_default=text("false")
+    )
+
+    article: Mapped["Articles"] = relationship(
+        "Articles", back_populates="article_topics"
+    )
+    topic: Mapped["Topics"] = relationship("Topics", back_populates="article_topics")
 
 
-t_v_articles_with_authors = Table(
-    "v_articles_with_authors",
-    Base.metadata,
-    Column("id", Integer),
-    Column("pmcid", String(50)),
-    Column("title", Text),
-    Column("publication_date", Date),
-    Column("journal", String(255)),
-    Column("authors", Text),
-)
+class Messages(Base):
+    __tablename__ = "messages"
+    __table_args__ = (
+        CheckConstraint(
+            "direction::text = ANY (ARRAY['inbound'::character varying, 'outbound'::character varying]::text[])",
+            name="messages_direction_check",
+        ),
+        ForeignKeyConstraint(
+            ["user_id"], ["users.id"], ondelete="CASCADE", name="messages_user_id_fkey"
+        ),
+        PrimaryKeyConstraint("id", name="messages_pkey"),
+        Index("idx_messages_user_type", "user_id", "created_at"),
+    )
 
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    direction: Mapped[str] = mapped_column(String(50), nullable=False)
+    text_content: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(
+        DateTime, server_default=text("now()")
+    )
 
-t_v_research_topics = Table(
-    "v_research_topics",
-    Base.metadata,
-    Column("keyword", String(255)),
-    Column("category", Text),
-    Column("article_count", BigInteger),
-    Column("avg_relevance", Double(53)),
-)
+    user: Mapped["Users"] = relationship("Users", back_populates="messages")

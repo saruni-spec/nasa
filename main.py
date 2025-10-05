@@ -1,6 +1,5 @@
 """
-FastAPI Routes for NASA Bioscience Dashboard
-Maps frontend API endpoints to service layer
+FastAPI Routes for NASA Bioscience Dashboard - Server-Side Rendering
 """
 
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -10,6 +9,7 @@ from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, Field
 import logging
+import json
 
 # Import service layer
 from db.service import (
@@ -20,6 +20,11 @@ from db.service import (
     KnowledgeGraphService,
     ExportService,
 )
+from fastapi.staticfiles import StaticFiles
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,15 +37,19 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS middleware (adjust origins for production)
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change to specific origins in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Templates
+templates = Jinja2Templates(directory="templates")
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # ============================================
 # Request/Response Models
@@ -56,6 +65,7 @@ class MetricsResponse(BaseModel):
     nasa_related_count: int
     nasa_related_percent: float
     recent_publications: int
+    years_of_publication: int
 
 
 class ResearchArea(BaseModel):
@@ -107,31 +117,66 @@ class SearchResult(BaseModel):
 
 
 # ============================================
-# Dashboard Routes
+# Main Dashboard Route - SERVER RENDERED
 # ============================================
-
-templates = Jinja2Templates(directory="templates")
 
 
 @app.get("/")
 async def root(request: Request):
-    """Landing page endpoint."""
+    """
+    Server-rendered landing page with all dashboard data pre-loaded
+    """
+    try:
+        # Fetch all dashboard data server-side
+        metrics = DashboardService.get_overview_metrics()
+        research_areas = DashboardService.get_research_areas(limit=10)
+        knowledge_gaps = DashboardService.get_knowledge_gaps()
+        insights = InsightsService.generate_insights()
+        analytics = DashboardService.get_analytics_breakdown()
 
-    return templates.TemplateResponse("index.html", {"request": request})
+        # Convert data to JSON for embedding in template
+        context = {
+            "request": request,
+            "metrics": metrics,
+            "research_areas": research_areas,
+            "knowledge_gaps": knowledge_gaps,
+            "insights": insights,
+            "analytics": analytics,
+            # Pass as JSON string for JavaScript consumption if needed
+            "metrics_json": json.dumps(metrics),
+            "research_areas_json": json.dumps(research_areas),
+            "knowledge_gaps_json": json.dumps(knowledge_gaps),
+            "insights_json": json.dumps(insights),
+            "analytics_json": json.dumps(analytics),
+        }
+
+        return templates.TemplateResponse("index.html", context)
+
+    except Exception as e:
+        logger.error(f"Error loading dashboard: {e}")
+        # Return error page
+        return templates.TemplateResponse(
+            "index.html",
+            {
+                "request": request,
+                "error": "Failed to load dashboard data",
+                "metrics": {},
+                "research_areas": [],
+                "knowledge_gaps": [],
+                "insights": [],
+                "analytics": {},
+            },
+        )
+
+
+# ============================================
+# API Routes (for dynamic updates only)
+# ============================================
 
 
 @app.get("/api/metrics", response_model=MetricsResponse)
 async def get_metrics():
-    """
-    Get overview metrics for dashboard
-
-    Returns:
-        - Total publications
-        - NASA-related percentage
-        - Author count
-        - Keyword count
-        - Recent publications
-    """
+    """Get overview metrics (for dynamic updates)"""
     try:
         metrics = DashboardService.get_overview_metrics()
         return metrics
@@ -142,12 +187,7 @@ async def get_metrics():
 
 @app.get("/api/research-areas", response_model=List[ResearchArea])
 async def get_research_areas(limit: int = Query(10, ge=1, le=50)):
-    """
-    Get top research areas by publication count
-
-    Args:
-        limit: Number of research areas to return (default: 10)
-    """
+    """Get top research areas"""
     try:
         areas = DashboardService.get_research_areas(limit=limit)
         return areas
@@ -158,11 +198,7 @@ async def get_research_areas(limit: int = Query(10, ge=1, le=50)):
 
 @app.get("/api/knowledge-gaps", response_model=List[KnowledgeGap])
 async def get_knowledge_gaps():
-    """
-    Get understudied research areas that need attention
-
-    Returns knowledge gaps with severity ratings and progress percentages
-    """
+    """Get understudied research areas"""
     try:
         gaps = DashboardService.get_knowledge_gaps()
         return gaps
@@ -173,11 +209,7 @@ async def get_knowledge_gaps():
 
 @app.get("/api/insights", response_model=List[Insight])
 async def get_insights():
-    """
-    Get AI-generated insights from publication analysis
-
-    Returns actionable insights for mission planning and research priorities
-    """
+    """Get AI-generated insights"""
     try:
         insights = InsightsService.generate_insights()
         return insights
@@ -188,64 +220,13 @@ async def get_insights():
 
 @app.get("/api/analytics")
 async def get_analytics():
-    """
-    Get comprehensive analytics data for charts
-
-    Returns:
-        - Publication trends over time
-        - Impact distribution
-        - Research area breakdown
-        - Methodology distribution
-    """
+    """Get comprehensive analytics data"""
     try:
         analytics = DashboardService.get_analytics_breakdown()
         return analytics
     except Exception as e:
         logger.error(f"Error fetching analytics: {e}")
         raise HTTPException(status_code=500, detail="Error fetching analytics")
-
-
-@app.get("/api/timeline")
-async def get_publication_timeline():
-    """Get publications by year for timeline visualization"""
-    try:
-        timeline = DashboardService.get_publication_timeline()
-        return {"timeline": timeline}
-    except Exception as e:
-        logger.error(f"Error fetching timeline: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching timeline")
-
-
-@app.get("/api/top-authors")
-async def get_top_authors(limit: int = Query(20, ge=1, le=100)):
-    """
-    Get most prolific authors
-
-    Args:
-        limit: Number of authors to return (default: 20)
-    """
-    try:
-        authors = DashboardService.get_top_authors(limit=limit)
-        return {"authors": authors}
-    except Exception as e:
-        logger.error(f"Error fetching top authors: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching top authors")
-
-
-@app.get("/api/organisms")
-async def get_organisms_studied(limit: int = Query(15, ge=1, le=50)):
-    """
-    Get most studied organisms
-
-    Args:
-        limit: Number of organisms to return (default: 15)
-    """
-    try:
-        organisms = DashboardService.get_organisms_studied(limit=limit)
-        return {"organisms": organisms}
-    except Exception as e:
-        logger.error(f"Error fetching organisms: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching organisms")
 
 
 # ============================================
@@ -255,18 +236,11 @@ async def get_organisms_studied(limit: int = Query(15, ge=1, le=50)):
 
 @app.get("/api/search", response_model=List[SearchResult])
 async def search_publications(
-    q: str = Query(..., min_length=2, description="Search query"),
-    section: Optional[str] = Query(None, description="Filter by section type"),
+    q: str = Query(..., min_length=2),
+    section: Optional[str] = None,
     limit: int = Query(20, ge=1, le=100),
 ):
-    """
-    Full-text search across publications
-
-    Args:
-        q: Search query
-        section: Optional section filter (abstract, results, conclusions, etc.)
-        limit: Maximum results to return
-    """
+    """Full-text search across publications"""
     try:
         section_filter = [section] if section else None
         results = ArticleSearchService.full_text_search(
@@ -278,20 +252,13 @@ async def search_publications(
         raise HTTPException(status_code=500, detail="Error searching publications")
 
 
-@app.post("/api/publications", response_model=dict)
+@app.post("/api/publications")
 async def filter_publications(
     filters: SearchFilters,
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ):
-    """
-    Filter publications by multiple criteria
-
-    Args:
-        filters: SearchFilters object with optional filters
-        limit: Maximum results per page
-        offset: Pagination offset
-    """
+    """Filter publications by criteria"""
     try:
         date_from = (
             datetime.fromisoformat(filters.date_from) if filters.date_from else None
@@ -315,12 +282,7 @@ async def filter_publications(
 
 @app.get("/api/publications/{article_id}")
 async def get_article_details(article_id: int):
-    """
-    Get complete details for a specific article
-
-    Args:
-        article_id: Article database ID
-    """
+    """Get complete details for a specific article"""
     try:
         article = ArticleDetailService.get_article_full(article_id)
         if not article:
@@ -333,23 +295,6 @@ async def get_article_details(article_id: int):
         raise HTTPException(status_code=500, detail="Error fetching article details")
 
 
-@app.get("/api/publications/{article_id}/related")
-async def get_related_articles(article_id: int, limit: int = Query(10, ge=1, le=50)):
-    """
-    Get articles related to a specific article
-
-    Args:
-        article_id: Article database ID
-        limit: Maximum related articles to return
-    """
-    try:
-        related = ArticleDetailService.get_related_articles(article_id, limit=limit)
-        return {"article_id": article_id, "related_articles": related}
-    except Exception as e:
-        logger.error(f"Error fetching related articles: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching related articles")
-
-
 # ============================================
 # Knowledge Graph Routes
 # ============================================
@@ -357,14 +302,7 @@ async def get_related_articles(article_id: int, limit: int = Query(10, ge=1, le=
 
 @app.get("/api/knowledge-graph")
 async def get_knowledge_graph(limit: int = Query(50, ge=10, le=200)):
-    """
-    Get knowledge graph network data
-
-    Returns nodes and edges for keyword co-occurrence network
-
-    Args:
-        limit: Maximum number of relationships to include
-    """
+    """Get knowledge graph network data"""
     try:
         graph = KnowledgeGraphService.build_keyword_network(limit=limit)
         return graph
@@ -373,90 +311,70 @@ async def get_knowledge_graph(limit: int = Query(50, ge=10, le=200)):
         raise HTTPException(status_code=500, detail="Error building knowledge graph")
 
 
-@app.get("/api/knowledge-graph/clusters")
-async def get_research_clusters():
-    """Get major research clusters identified in the literature"""
+# Add at the top with other imports
+from ai.agent import NasaAgent
+import os
+
+# Add after app initialization
+nasa_agent = None
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize the NASA agent on startup"""
+    global nasa_agent
     try:
-        clusters = KnowledgeGraphService.get_research_clusters()
-        return {"clusters": clusters}
+        nasa_agent = NasaAgent()
+        logger.info("NASA Agent initialized successfully")
     except Exception as e:
-        logger.error(f"Error fetching research clusters: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching research clusters")
+        logger.error(f"Failed to initialize NASA Agent: {e}")
 
 
-@app.get("/api/knowledge-graph/relationships")
-async def get_concept_relationships():
-    """Get relationships between key research concepts"""
-    try:
-        relationships = KnowledgeGraphService.get_concept_relationships()
-        return {"relationships": relationships}
-    except Exception as e:
-        logger.error(f"Error fetching concept relationships: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching relationships")
-
-
-@app.get("/api/knowledge-graph/authors")
-async def get_author_network(min_collaborations: int = Query(2, ge=1, le=10)):
+# Add new chatbot endpoint
+@app.post("/api/chatbot")
+async def chatbot_message(request: Request):
     """
-    Get author collaboration network
-
-    Args:
-        min_collaborations: Minimum number of joint publications to include
+    Handle chatbot messages
     """
     try:
-        network = KnowledgeGraphService.get_author_collaboration_network(
-            min_collaborations=min_collaborations
-        )
-        return network
+        data = await request.json()
+        message = data.get("message", "").strip()
+
+        if not message:
+            raise HTTPException(status_code=400, detail="Message cannot be empty")
+
+        if not nasa_agent:
+            raise HTTPException(status_code=503, detail="Agent not initialized")
+
+        # For now, create a simple user object (you'll replace this with actual user management)
+        # Placeholder user - adapt based on your User model
+        class SimpleUser:
+            def __init__(self):
+                self.id = 1  # Default user ID
+                self.name = "Guest"
+
+        user = SimpleUser()
+
+        # Process message through agent
+        result = nasa_agent.process_message_sync(user=user, message=message)
+
+        if result["status"] == "success":
+            return {"response": result["response"], "status": "success"}
+        else:
+            return {
+                "response": "I'm having trouble processing that right now. Please try again.",
+                "status": "error",
+            }
+
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error fetching author network: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching author network")
+        logger.error(f"Chatbot error: {e}")
+        raise HTTPException(status_code=500, detail="Error processing message")
 
 
 # ============================================
-# Export Routes
-# ============================================
-
-
-@app.get("/api/export/summary")
-async def export_summary_report():
-    """Generate and export comprehensive summary report"""
-    try:
-        report = ExportService.generate_summary_report()
-        return report
-    except Exception as e:
-        logger.error(f"Error generating report: {e}")
-        raise HTTPException(status_code=500, detail="Error generating report")
-
-
-@app.get("/api/export/articles")
-async def export_article_list(
-    year: Optional[int] = Query(None, description="Filter by publication year"),
-    nasa_only: bool = Query(False, description="Only NASA-related articles"),
-):
-    """
-    Export article list with optional filters
-
-    Args:
-        year: Optional year filter
-        nasa_only: If True, only return NASA-related articles
-    """
-    try:
-        filters = {}
-        if year:
-            filters["year"] = year
-        if nasa_only:
-            filters["nasa_only"] = True
-
-        articles = ExportService.get_article_list(filters if filters else None)
-        return {"count": len(articles), "articles": articles}
-    except Exception as e:
-        logger.error(f"Error exporting articles: {e}")
-        raise HTTPException(status_code=500, detail="Error exporting articles")
-
-
-# ============================================
-# Health & Status Routes
+# Health Check
 # ============================================
 
 
@@ -464,7 +382,6 @@ async def export_article_list(
 async def health_check():
     """API health check endpoint"""
     try:
-        # Quick database check
         metrics = DashboardService.get_overview_metrics()
         return {
             "status": "healthy",
@@ -476,58 +393,7 @@ async def health_check():
         return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
 
 
-@app.get("/api/stats")
-async def get_statistics():
-    """Get quick statistics for API monitoring"""
-    try:
-        metrics = DashboardService.get_overview_metrics()
-        return {
-            "publications": {
-                "total": metrics["total_publications"],
-                "nasa_related": metrics["nasa_related_count"],
-                "recent": metrics["recent_publications"],
-            },
-            "coverage": {
-                "doi_percent": metrics["doi_coverage_percent"],
-                "nasa_percent": metrics["nasa_related_percent"],
-            },
-            "entities": {
-                "authors": metrics["total_authors"],
-                "keywords": metrics["total_keywords"],
-            },
-        }
-    except Exception as e:
-        logger.error(f"Error fetching statistics: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching statistics")
-
-
-# ============================================
-# Error Handlers
-# ============================================
-
-
-@app.exception_handler(404)
-async def not_found_handler(request, exc):
-    return {"error": "Resource not found", "path": str(request.url)}
-
-
-@app.exception_handler(500)
-async def internal_error_handler(request, exc):
-    logger.error(f"Internal error on {request.url}: {exc}")
-    return {"error": "Internal server error", "message": "An unexpected error occurred"}
-
-
-# ============================================
-# Run Application
-# ============================================
-
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(
-        "api:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,  # Disable in production
-        log_level="info",
-    )
+    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True, log_level="info")

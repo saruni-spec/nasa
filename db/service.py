@@ -28,6 +28,10 @@ from .models import (
     Users,
     Messages,
     ArticleRelationships,
+    Topics,
+    ArticleTopics,
+    FundingSources,
+    ArticleFunding,
 )
 
 # Database configuration
@@ -117,30 +121,45 @@ class ArticleSearchService:
         """
         Perform full-text search using PostgreSQL tsvector
         Bypasses SQLAlchemy to use native FTS
+        Now includes all keywords associated with each article
         """
         with get_db() as db:
             sql = text(
                 """
-                SELECT DISTINCT ON (a.id)
-                    a.id,
-                    a.pmcid,
-                    a.title,
-                    a.publication_date,
-                    a.journal,
-                    a.doi,
-                    s.section_type,
-                    ts_rank(s.content_search, plainto_tsquery('english', :query)) as rank,
-                    ts_headline('english', 
-                        LEFT(s.content, 500), 
-                        plainto_tsquery('english', :query),
-                        'MaxWords=50, MinWords=25'
-                    ) as snippet
-                FROM articles a
-                JOIN article_sections s ON a.id = s.article_id
-                WHERE s.content_search @@ plainto_tsquery('english', :query)
-                    AND (:section_filter IS NULL OR s.section_type = ANY(:section_filter))
-                ORDER BY a.id, rank DESC
-                LIMIT :limit
+                WITH ranked_articles AS (
+                    SELECT DISTINCT ON (a.id)
+                        a.id,
+                        a.pmcid,
+                        a.title,
+                        a.publication_date,
+                        a.journal,
+                        a.doi,
+                        s.section_type,
+                        ts_rank(s.content_search, plainto_tsquery('english', :query)) as rank,
+                        ts_headline('english', 
+                            LEFT(s.content, 500), 
+                            plainto_tsquery('english', :query),
+                            'MaxWords=50, MinWords=25'
+                        ) as snippet
+                    FROM articles a
+                    JOIN article_sections s ON a.id = s.article_id
+                    WHERE s.content_search @@ plainto_tsquery('english', :query)
+                        AND (:section_filter IS NULL OR s.section_type = ANY(:section_filter))
+                    ORDER BY a.id, rank DESC
+                    LIMIT :limit
+                )
+                SELECT 
+                    ra.*,
+                    COALESCE(
+                        ARRAY_AGG(k.keyword ORDER BY k.keyword) FILTER (WHERE k.keyword IS NOT NULL),
+                        ARRAY[]::VARCHAR[]
+                    ) as keywords
+                FROM ranked_articles ra
+                LEFT JOIN article_keywords ak ON ra.id = ak.article_id
+                LEFT JOIN keywords k ON ak.keyword_id = k.id
+                GROUP BY ra.id, ra.pmcid, ra.title, ra.publication_date, 
+                         ra.journal, ra.doi, ra.section_type, ra.rank, ra.snippet
+                ORDER BY ra.rank DESC
             """
             )
 
@@ -161,6 +180,7 @@ class ArticleSearchService:
                     "section": r.section_type,
                     "relevance_score": float(r.rank),
                     "snippet": r.snippet,
+                    "keywords": list(r.keywords) if r.keywords else [],
                 }
                 for r in results
             ]
@@ -461,6 +481,8 @@ class DashboardService:
                 .scalar()
             )
 
+            years_of_publication = len(DashboardService.get_publication_timeline())
+
             return {
                 "total_publications": total_articles,
                 "publications_with_doi": articles_with_doi,
@@ -478,11 +500,12 @@ class DashboardService:
                     else 0
                 ),
                 "recent_publications": recent_count,
+                "years_of_publication": years_of_publication,
             }
 
     @staticmethod
     def get_research_areas(limit: int = 10) -> List[Dict]:
-        """Get top research areas by publication count"""
+        """Auto-discover top research areas by publication count"""
         with get_db() as db:
             results = (
                 db.query(
@@ -490,12 +513,7 @@ class DashboardService:
                     Keywords.category,
                     func.count(ArticleKeywords.article_id).label("article_count"),
                 )
-                .join(ArticleKeywords)
-                .filter(
-                    Keywords.category.in_(
-                        ["biological_system", "experiment_type", "topic"]
-                    )
-                )
+                .join(ArticleKeywords, Keywords.id == ArticleKeywords.keyword_id)
                 .group_by(Keywords.keyword, Keywords.category)
                 .order_by(desc("article_count"))
                 .limit(limit)
@@ -503,7 +521,11 @@ class DashboardService:
             )
 
             return [
-                {"name": r.keyword, "count": r.article_count, "category": r.category}
+                {
+                    "name": r.keyword,
+                    "count": r.article_count,
+                    "category": r.category or "unknown",
+                }
                 for r in results
             ]
 
@@ -675,6 +697,14 @@ class DashboardService:
             )
             method_results = db.execute(method_sql).fetchall()
 
+            cited_articles = DashboardService.get_top_cited_articles(limit=10)
+
+            # Top funders
+            funders = DashboardService.get_top_funders(limit=10)
+
+            # Topics distribution
+            topics = DashboardService.get_topics_distribution(limit=10)
+
             return {
                 "trends": {
                     "labels": [str(t["year"]) for t in timeline if t["year"]],
@@ -697,7 +727,107 @@ class DashboardService:
                     ],
                     "data": [r.article_count for r in method_results],
                 },
+                "topCited": {
+                    "labels": [a["title"][:30] + "..." for a in cited_articles],
+                    "data": [a["citations"] for a in cited_articles],
+                    "pmcids": [a["pmcid"] for a in cited_articles],
+                },
+                "topFunders": {
+                    "labels": [f["abbreviation"] or f["name"] for f in funders],
+                    "data": [f["publication_count"] for f in funders],
+                    "fullNames": [f["name"] for f in funders],
+                },
+                "topicsDistribution": {
+                    "labels": [t["name"] for t in topics],
+                    "data": [t["count"] for t in topics],
+                },
             }
+
+    @staticmethod
+    def get_top_cited_articles(limit: int = 10) -> List[Dict]:
+        """Get articles with most citations"""
+        with get_db() as db:
+            results = (
+                db.query(
+                    Articles.pmcid,
+                    Articles.title,
+                    Articles.citations,
+                    Articles.publication_date,
+                    Articles.journal,
+                )
+                .filter(Articles.citations.isnot(None))
+                .order_by(Articles.citations.desc())
+                .limit(limit)
+                .all()
+            )
+
+            return [
+                {
+                    "pmcid": r.pmcid,
+                    "title": r.title,
+                    "citations": r.citations or 0,
+                    "date": (
+                        r.publication_date.isoformat() if r.publication_date else None
+                    ),
+                    "journal": r.journal,
+                }
+                for r in results
+            ]
+
+    @staticmethod
+    def get_top_funders(limit: int = 10) -> List[Dict]:
+        """Get funding sources with most publications"""
+        with get_db() as db:
+            results = (
+                db.query(
+                    FundingSources.name,
+                    FundingSources.abbreviation,
+                    FundingSources.country,
+                    func.count(ArticleFunding.article_id).label("publication_count"),
+                )
+                .join(ArticleFunding)
+                .group_by(
+                    FundingSources.id,
+                    FundingSources.name,
+                    FundingSources.abbreviation,
+                    FundingSources.country,
+                )
+                .order_by(desc("publication_count"))
+                .limit(limit)
+                .all()
+            )
+
+            return [
+                {
+                    "name": r.name,
+                    "abbreviation": r.abbreviation,
+                    "country": r.country,
+                    "publication_count": r.publication_count,
+                }
+                for r in results
+            ]
+
+    @staticmethod
+    def get_topics_distribution(limit: int = 15) -> List[Dict]:
+        """Get topics with article counts"""
+        with get_db() as db:
+            results = (
+                db.query(
+                    Topics.name,
+                    Topics.description,
+                    func.count(ArticleTopics.article_id).label("article_count"),
+                )
+                .join(ArticleTopics)
+                .group_by(Topics.id, Topics.name, Topics.description)
+                .order_by(desc("article_count"))
+                .limit(limit)
+                .all()
+            )
+
+            return [
+                {"name": r.name, "description": r.description, "count": r.article_count}
+                for r in results
+            ]
 
 
 # ============================================

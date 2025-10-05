@@ -6,7 +6,6 @@ from langchain_openai import ChatOpenAI
 from langfuse.langchain import CallbackHandler
 
 
-from models.db import db_config
 from .tools import all_tools
 
 from dataclasses import dataclass, field
@@ -34,11 +33,9 @@ class NasaAgent:
     AI Health Companion.
     """
 
-    def __init__(self, google_api_key: str):
+    def __init__(self):
         self.llm = ChatOpenAI(model="gpt-4.1", temperature=0)
         self.llm_with_tools = self.llm.bind_tools(all_tools)
-        self.user_service = UserService()
-        self.db_config = db_config
         self.agent_graph = self._build_agentic_graph()
         self.langfuse = CallbackHandler()
 
@@ -95,66 +92,56 @@ class NasaAgent:
         return {"messages": state.messages + tool_messages}
 
     def _build_master_system_prompt(self) -> str:
-        """
-        Constructs a single, comprehensive, and token-optimized system prompt
-        based on the user's current state.
-        """
-
         prompt_parts = [
             """
             ## Core Identity & Rules
-           
+            You are Titan, an AI assistant specialized in NASA bioscience research.
+            You help researchers, mission planners, and scientists explore 608 NASA 
+            bioscience publications to understand research progress, identify gaps,
+            and provide actionable insights.
+            
+            ## Available Capabilities
+            You have access to tools that can:
+            - Search publications by keywords or full-text
+            - Retrieve detailed article information
+            - Analyze research trends and patterns
+            - Identify knowledge gaps and understudied areas
+            - Generate strategic insights for mission planning
+            - Find related articles and research clusters
+            
+            ## Guidelines
+            - Always use tools to answer questions with data
+            - Be specific and cite PMCIDs when referencing articles
+            - Identify knowledge gaps when discussing research areas
+            - Provide actionable recommendations for mission planners
+            - Be concise but comprehensive in your responses
             """
         ]
-
         return "\n".join(prompt_parts)
 
-    def process_message_sync(
-        self,
-        user: User,
-        message: str,
-    ) -> Dict[str, Any]:
-
-        session = self.db_config.get_sync_session()
-
+    # Update process_message_sync to work without database for now:
+    def process_message_sync(self, user, message: str) -> Dict[str, Any]:
         try:
-            # --- 1. BUILD THE MASTER SYSTEM PROMPT ---
-            master_prompt = self._build_master_system_prompt(user)
+            # Build system prompt
+            master_prompt = self._build_master_system_prompt()
             system_prompts = [SystemMessage(content=master_prompt)]
 
-            # --- 2. LOAD CHAT HISTORY ---
+            # For now, no chat history (you'll add this later)
             chat_history = []
-            recent_messages_db = self.user_service.get_recent_messages(
-                db=session, user_id=user.id
-            )
 
-            for msg in recent_messages_db:
-                if msg.direction == MessageDirection.INBOUND:
-                    chat_history.append(HumanMessage(content=msg.text_content))
-                elif msg.direction == MessageDirection.OUTBOUND:
-                    chat_history.append(AIMessage(content=msg.text_content))
+            # Prepare user message
+            final_user_message = HumanMessage(content=message)
+            final_message_list = system_prompts + chat_history + [final_user_message]
 
-        except Exception as e:
-            print(f" DB Error: {e}")
-            return {"response": "Error accessing records.", "status": "error"}
-        finally:
-            session.close()
-
-        # --- 3. PREPARE AND INVOKE THE AGENT ---
-        human_message_content = [{"type": "text", "text": message}]
-
-        final_user_message = HumanMessage(content=human_message_content)
-        final_message_list = system_prompts + chat_history + [final_user_message]
-
-        try:
+            # Invoke agent
             initial_state = {"messages": final_message_list}
-
             final_state = self.agent_graph.invoke(
                 initial_state, config={"callbacks": [self.langfuse]}
             )
 
             final_response = final_state["messages"][-1].content
             return {"response": final_response, "status": "success"}
+
         except Exception as e:
             print(f"Agent Error: {e}")
             return {"response": "A technical issue occurred.", "status": "error"}

@@ -10,7 +10,7 @@ output_directory = "scraped_html_files"
 # Define the column containing the links
 link_column_name = "Link"
 
-#  Headers to Mimic a Browser ---
+#  Headers to Mimic a Browser ---links
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 }
@@ -37,6 +37,11 @@ if link_column_name not in df.columns:
     print(f"Error: Could not find a column named '{link_column_name}' in the CSV.")
     print(f"Available columns are: {list(df.columns)}")
     exit()
+
+print(f"Total rows in CSV: {len(df)}")
+print(f"Non-null links: {df[link_column_name].notna().sum()}")
+print(f"Unique links: {df[link_column_name].dropna().nunique()}")
+
 
 links = df[link_column_name].dropna().unique()
 print(f"Found {len(links)} unique links to process.")
