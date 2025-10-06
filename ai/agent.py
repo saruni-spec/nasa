@@ -119,21 +119,17 @@ class NasaAgent:
         ]
         return "\n".join(prompt_parts)
 
-    # Update process_message_sync to work without database for now:
     def process_message_sync(self, user, message: str) -> Dict[str, Any]:
         try:
-            # Build system prompt
+
             master_prompt = self._build_master_system_prompt()
             system_prompts = [SystemMessage(content=master_prompt)]
 
-            # For now, no chat history (you'll add this later)
             chat_history = []
 
-            # Prepare user message
             final_user_message = HumanMessage(content=message)
             final_message_list = system_prompts + chat_history + [final_user_message]
 
-            # Invoke agent
             initial_state = {"messages": final_message_list}
             final_state = self.agent_graph.invoke(
                 initial_state, config={"callbacks": [self.langfuse]}

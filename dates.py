@@ -6,10 +6,9 @@ from typing import Optional
 import psycopg2
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+
 load_dotenv()
 
-# --- Configuration ---
 DB_CONFIG = {
     "dbname": os.getenv("PGDATABASE", "neondb"),
     "user": os.getenv("PGUSER", "neondb_owner"),
@@ -19,7 +18,6 @@ DB_CONFIG = {
     "sslmode": os.getenv("PGSSLMODE", "require"),
 }
 INPUT_JSON = "merged_articles.json"
-# ---------------------
 
 
 def normalize_date(date_str: str) -> Optional[datetime.date]:
@@ -53,7 +51,7 @@ def normalize_date(date_str: str) -> Optional[datetime.date]:
         except ValueError:
             continue
 
-    return None  # Fallback if all attempts fail
+    return None
 
 
 def run_date_update_script():
@@ -62,7 +60,6 @@ def run_date_update_script():
     """
     print("Starting date update script...")
 
-    # 1. Load data from JSON file
     try:
         with open(INPUT_JSON, "r", encoding="utf-8") as f:
             articles = json.load(f)
@@ -74,17 +71,15 @@ def run_date_update_script():
         print(f"ERROR: Could not decode JSON from {INPUT_JSON}. Exiting.")
         return
 
-    # 2. Connect to the database
     conn = None
     try:
         conn = psycopg2.connect(**DB_CONFIG)
-        conn.autocommit = False  # Use transactions for safety
+        conn.autocommit = False
         cursor = conn.cursor()
     except Exception as e:
         print(f"ERROR: Could not connect to the database. Check DB_CONFIG. Error: {e}")
         return
 
-    # 3. Process and Update
     update_count = 0
     total_count = len(articles)
 
@@ -102,7 +97,7 @@ def run_date_update_script():
             new_date = normalize_date(original_date_str)
 
             if new_date:
-                # Update the database
+
                 try:
                     cursor.execute(
                         """
@@ -119,14 +114,13 @@ def run_date_update_script():
 
                 except Exception as e:
                     print(f"ERROR updating {pmcid} with date {new_date}: {e}")
-                    conn.rollback()  # Rollback on error for this article
+                    conn.rollback()
 
             if (i + 1) % 100 == 0:
                 print(
                     f"Processed {i + 1}/{total_count}. Updates so far: {update_count}"
                 )
 
-    # 4. Commit and Close
     try:
         conn.commit()
         print("\n" + "=" * 50)

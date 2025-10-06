@@ -4,10 +4,8 @@ Enables the agent to search publications, analyze research, and provide insights
 """
 
 from langchain_core.tools import tool
-from typing import List, Dict, Optional, Any
-from datetime import datetime
+from typing import List
 
-# Import services
 import sys
 
 sys.path.append("..")
@@ -80,7 +78,6 @@ def get_article_details(pmcid: str) -> str:
     - Authors or methods of a particular study
     """
     try:
-        # First find the article_id from pmcid
         from db.service import get_db
         from db.models import Articles
 
@@ -525,7 +522,6 @@ def quick_answer(question: str) -> str:
         return f"Error answering question: {str(e)}"
 
 
-# Combine all tools
 all_tools = [
     search_publications,
     get_article_details,

@@ -7,11 +7,12 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 import logging
 import json
+import uvicorn
 
-# Import service layer
+
 from db.service import (
     DashboardService,
     ArticleSearchService,
@@ -20,24 +21,28 @@ from db.service import (
     KnowledgeGraphService,
     ExportService,
 )
+
+
+from ai.agent import NasaAgent
+
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 
 load_dotenv()
 
-# Configure logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
+
 app = FastAPI(
     title="NASA Bioscience Publications API",
     description="API for exploring NASA bioscience research publications",
     version="1.0.0",
 )
 
-# CORS middleware
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -46,14 +51,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Templates
 templates = Jinja2Templates(directory="templates")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# ============================================
+
 # Request/Response Models
-# ============================================
 
 
 class MetricsResponse(BaseModel):
@@ -116,9 +119,6 @@ class SearchResult(BaseModel):
     snippet: str
 
 
-# ============================================
-# Main Dashboard Route - SERVER RENDERED
-# ============================================
 @app.get("/")
 def home(request: Request):
     return templates.TemplateResponse("home.html", {"request": request})
@@ -137,7 +137,6 @@ async def root(request: Request):
         insights = InsightsService.generate_insights()
         analytics = DashboardService.get_analytics_breakdown()
 
-        # Convert data to JSON for embedding in template
         context = {
             "request": request,
             "metrics": metrics,
@@ -145,7 +144,6 @@ async def root(request: Request):
             "knowledge_gaps": knowledge_gaps,
             "insights": insights,
             "analytics": analytics,
-            # Pass as JSON string for JavaScript consumption if needed
             "metrics_json": json.dumps(metrics),
             "research_areas_json": json.dumps(research_areas),
             "knowledge_gaps_json": json.dumps(knowledge_gaps),
@@ -157,7 +155,7 @@ async def root(request: Request):
 
     except Exception as e:
         logger.error(f"Error loading dashboard: {e}")
-        # Return error page
+
         return templates.TemplateResponse(
             "index.html",
             {
@@ -172,9 +170,7 @@ async def root(request: Request):
         )
 
 
-# ============================================
-# API Routes (for dynamic updates only)
-# ============================================
+# API Routes
 
 
 @app.get("/api/metrics", response_model=MetricsResponse)
@@ -232,9 +228,7 @@ async def get_analytics():
         raise HTTPException(status_code=500, detail="Error fetching analytics")
 
 
-# ============================================
 # Search & Publications Routes
-# ============================================
 
 
 @app.get("/api/search", response_model=List[SearchResult])
@@ -298,9 +292,7 @@ async def get_article_details(article_id: int):
         raise HTTPException(status_code=500, detail="Error fetching article details")
 
 
-# ============================================
 # Knowledge Graph Routes
-# ============================================
 
 
 @app.get("/api/knowledge-graph")
@@ -314,11 +306,6 @@ async def get_knowledge_graph(limit: int = Query(50, ge=10, le=200)):
         raise HTTPException(status_code=500, detail="Error building knowledge graph")
 
 
-# Add at the top with other imports
-from ai.agent import NasaAgent
-import os
-
-# Add after app initialization
 nasa_agent = None
 
 
@@ -333,7 +320,12 @@ async def startup_event():
         logger.error(f"Failed to initialize NASA Agent: {e}")
 
 
-# Add new chatbot endpoint
+class SimpleUser:
+    def __init__(self):
+        self.id = 1
+        self.name = "Guest"
+
+
 @app.post("/api/chatbot")
 async def chatbot_message(request: Request):
     """
@@ -349,16 +341,8 @@ async def chatbot_message(request: Request):
         if not nasa_agent:
             raise HTTPException(status_code=503, detail="Agent not initialized")
 
-        # For now, create a simple user object (you'll replace this with actual user management)
-        # Placeholder user - adapt based on your User model
-        class SimpleUser:
-            def __init__(self):
-                self.id = 1  # Default user ID
-                self.name = "Guest"
-
         user = SimpleUser()
 
-        # Process message through agent
         result = nasa_agent.process_message_sync(user=user, message=message)
 
         if result["status"] == "success":
@@ -376,9 +360,7 @@ async def chatbot_message(request: Request):
         raise HTTPException(status_code=500, detail="Error processing message")
 
 
-# ============================================
 # Health Check
-# ============================================
 
 
 @app.get("/api/health")
@@ -397,6 +379,5 @@ async def health_check():
 
 
 if __name__ == "__main__":
-    import uvicorn
 
     uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True, log_level="info")

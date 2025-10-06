@@ -52,9 +52,7 @@ def get_db():
         db.close()
 
 
-# ============================================
 # User & Chat Management Service
-# ============================================
 
 
 class UserService:
@@ -106,9 +104,7 @@ class UserService:
             ]
 
 
-# ============================================
 # Article Search Service
-# ============================================
 
 
 class ArticleSearchService:
@@ -297,9 +293,7 @@ class ArticleSearchService:
             }
 
 
-# ============================================
 # Article Details Service
-# ============================================
 
 
 class ArticleDetailService:
@@ -439,9 +433,7 @@ class ArticleDetailService:
             ]
 
 
-# ============================================
 # Dashboard Analytics Service
-# ============================================
 
 
 class DashboardService:
@@ -830,9 +822,7 @@ class DashboardService:
             ]
 
 
-# ============================================
 # AI Insights Generator Service
-# ============================================
 
 
 class InsightsService:
@@ -983,9 +973,7 @@ class InsightsService:
         return insights[:4]  # Return top 4 insights
 
 
-# ============================================
 # Knowledge Graph Service
-# ============================================
 
 
 class KnowledgeGraphService:
@@ -1196,9 +1184,7 @@ class KnowledgeGraphService:
             return {"nodes": list(nodes.values()), "edges": edges}
 
 
-# ============================================
 # Chatbot Query Service
-# ============================================
 
 
 class ChatbotService:
@@ -1415,9 +1401,7 @@ class ChatbotService:
         return suggestions
 
 
-# ============================================
 # Export Service (for reports/downloads)
-# ============================================
 
 
 class ExportService:
@@ -1483,9 +1467,8 @@ class ExportService:
             ]
 
 
-# ============================================
 # Example Usage & Testing
-# ============================================
+
 
 if __name__ == "__main__":
     print("NASA Bioscience Service Layer - Complete\n")

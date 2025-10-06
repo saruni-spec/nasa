@@ -38,9 +38,8 @@ except:
     )
     nlp = None
 
-# ============================================
+
 # Keyword Extractor
-# ============================================
 
 
 class KeywordExtractor:
@@ -225,9 +224,7 @@ class KeywordExtractor:
         return result[:max_keywords]
 
 
-# ============================================
 # Database Loader
-# ============================================
 
 
 class DatabaseLoader:
@@ -774,9 +771,7 @@ class DatabaseLoader:
             )
 
 
-# ============================================
 # Main Processing
-# ============================================
 
 
 def load_all_articles(json_file: str, db_config: dict, batch_size: int = 50):
