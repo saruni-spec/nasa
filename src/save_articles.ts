@@ -1,4 +1,4 @@
-// controllers/SavedArticlesController.ts - Saved articles management
+// Saved articles management
 
 import { StorageService } from "./storage";
 import { ToastService } from "./toast";

@@ -1,4 +1,4 @@
-// services/StorageService.ts - In-memory data storage
+// In-memory data storage
 
 import { SavedArticle, ChatMessage } from "./types";
 

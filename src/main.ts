@@ -1,4 +1,4 @@
-// main.ts - Application entry point
+// Application entry point
 import { APIService } from "./api.js";
 import { StorageService } from "./storage.js";
 import { ChartService } from "./chart.js";

@@ -1,5 +1,3 @@
-// types.ts - All TypeScript interfaces and types
-
 export interface Metrics {
   total_publications: number;
   recent_publications: number;

@@ -1,4 +1,4 @@
-// services/toast.ts - Toast notification system
+// Toast notification system
 
 import { ToastOptions } from "./types";
 

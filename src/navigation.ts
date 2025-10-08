@@ -1,4 +1,4 @@
-// controllers/NavigationController.ts - Navigation and tab management
+// Navigation and tab management
 
 import { DashboardController } from "./dashboard";
 import { SearchController } from "./search";
