@@ -11,7 +11,7 @@ from pydantic import BaseModel
 import logging
 import json
 import uvicorn
-
+import mimetypes
 
 from db.service import (
     DashboardService,
@@ -50,7 +50,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+mimetypes.add_type("application/javascript", ".js")
 templates = Jinja2Templates(directory="templates")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
