@@ -119,12 +119,12 @@ class SearchResult(BaseModel):
     snippet: str
 
 
-@app.get("/home")
+@app.get("/")
 def home(request: Request):
     return templates.TemplateResponse("home.html", {"request": request})
 
 
-@app.get("/")
+@app.get("/dashboard")
 async def root(request: Request):
     """
     Server-rendered landing page with all dashboard data pre-loaded
