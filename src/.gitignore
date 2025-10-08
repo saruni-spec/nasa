@@ -1,0 +1,56 @@
+
+
+
+
+
+
+
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Compiled output
+static/js/dist/
+*.js.map
+*.d.ts
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+
+# Python (if using Flask backend)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Build
+dist/
+build/
