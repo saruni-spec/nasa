@@ -1,13 +1,8 @@
-// controllers/KnowledgeGraphController.ts - Knowledge graph visualization
+// Knowledge graph visualization
 
 import { APIService } from "./api";
 import { ToastService } from "./toast";
-import {
-  KnowledgeGraphData,
-  GraphNode,
-  ResearchCluster,
-  ConceptRelationship,
-} from "./types";
+import { KnowledgeGraphData, GraphNode } from "./types";
 
 // Declare d3 as global
 declare const d3: any;

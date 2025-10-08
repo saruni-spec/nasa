@@ -1,4 +1,4 @@
-// controllers/SearchController.ts - Search functionality
+// Search functionality
 
 import { APIService } from "./api";
 import { StorageService } from "./storage";

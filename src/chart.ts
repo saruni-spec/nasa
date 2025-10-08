@@ -1,4 +1,4 @@
-// services/ChartService.ts - Chart.js wrapper with instance management
+// Chart.js wrapper with instance management
 
 import { Chart as ChartT, ChartConfiguration, ChartType } from "chart.js";
 import Chart from "https://esm.sh/chart.js@4.4.0/auto";
